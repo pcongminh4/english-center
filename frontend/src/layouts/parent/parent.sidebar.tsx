@@ -1,50 +1,58 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
   Typography,
   Button,
   List,
   ListItem,
-  ListItemPrefix,
-  Accordion,
   AccordionHeader,
+  Accordion,
   AccordionBody,
-  Chip,
 } from "@material-tailwind/react";
 import {
   ChevronDownIcon,
   HomeIcon,
   UserGroupIcon,
   CalendarDaysIcon,
-  BanknotesIcon,
   AcademicCapIcon,
   ClockIcon,
-  Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  DocumentTextIcon,
   ChartBarIcon,
-  BookOpenIcon,
-  TrophyIcon,
   HeartIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
+const normalizePathname = (path: string) => {
+  if (!path) return "/";
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+};
+
 const ParentSidebar = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [openSections, setOpenSections] = useState<string[]>(["overview"]);
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const location = useLocation();
+  const pathname = normalizePathname(location.pathname);
 
-  const toggleSection = (section: string) => {
-    setOpenSections(prev =>
-      prev.includes(section)
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
-    );
+  const isPathActive = (path: string) => {
+    const targetPath = normalizePathname(path);
+
+    if (targetPath === "/parent") {
+      return pathname === "/parent" || pathname === "/parent/dashboard";
+    }
+
+    return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
   };
 
-  const isActiveLink = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+  const toggleSection = (section: string) => {
+    setOpenSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section],
+    );
   };
 
   const handleLogout = () => {
@@ -61,15 +69,15 @@ const ParentSidebar = () => {
       id: "overview",
       title: "Tổng quan",
       icon: HomeIcon,
-      path: "/parent/dashboard",
+      path: "/parent",
+      matchPaths: ["/parent", "/parent/dashboard"],
       badge: null,
     },
     {
       id: "children",
       title: "Quản lý con",
       icon: UserGroupIcon,
-      path: "/parent/children",
-      badge: { value: 2, color: "purple" },
+      path: "/parent/children/list",
       children: [
         { title: "Danh sách con", icon: UserGroupIcon, path: "/parent/children/list" },
       ]
@@ -78,43 +86,37 @@ const ParentSidebar = () => {
       id: "schedule",
       title: "Lịch học & Thời khóa biểu",
       icon: CalendarDaysIcon,
-      path: "/parent/schedule",
+      path: "/parent/schedule/timetable",
       children: [
         { title: "Thời khóa biểu", icon: ClockIcon, path: "/parent/schedule/timetable" },
-        { title: "Lịch thi", icon: DocumentTextIcon, path: "/parent/schedule/exams" },
       ]
     },
     {
       id: "academic",
       title: "Học tập & Kết quả",
       icon: AcademicCapIcon,
-      path: "/parent/academic",
+      path: "/parent/academic/results",
       children: [
         { title: "Kết quả học tập", icon: ChartBarIcon, path: "/parent/academic/results" },
         { title: "Điểm danh", icon: ClockIcon, path: "/parent/academic/attendance" },
-        { title: "Bài tập về nhà", icon: BookOpenIcon, path: "/parent/academic/homework" },
-        { title: "Thành tích", icon: TrophyIcon, path: "/parent/academic/achievements" },
       ]
-    },
-    {
-      id: "tuition",
-      title: "Học phí & Thanh toán",
-      icon: BanknotesIcon,
-      path: "/parent/tuition",
-      badge: { value: "Mới", color: "red" },
-      children: [
-        { title: "Hóa đơn học phí", icon: DocumentTextIcon, path: "/parent/tuition/invoices" },
-        { title: "Lịch sử thanh toán", icon: ClockIcon, path: "/parent/tuition/history" },
-        { title: "Phương thức thanh toán", icon: BanknotesIcon, path: "/parent/tuition/methods" },
-      ]
-    },
-    {
-      id: "settings",
-      title: "Cài đặt",
-      icon: Cog6ToothIcon,
-      path: "/parent/settings",
     },
   ];
+
+  const isMenuItemActive = (item: (typeof menuItems)[number]) => {
+    const matchPaths = item.matchPaths ?? [item.path];
+    const isSelfActive = matchPaths.some((path) => isPathActive(path));
+    const isChildActive = item.children?.some((child) => isPathActive(child.path)) ?? false;
+
+    return isSelfActive || isChildActive;
+  };
+
+  const computedOpenSections = new Set([
+    ...openSections,
+    ...menuItems
+      .filter((item) => item.children && isMenuItemActive(item))
+      .map((item) => item.id),
+  ]);
 
   return (
     <div className="bg-white border-r border-gray-200 w-64 h-screen flex flex-col shadow-xl overflow-x-hidden">
@@ -139,9 +141,10 @@ const ParentSidebar = () => {
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <List className="space-y-1 min-w-0">
           {menuItems.map((item) => {
-            const isOpen = openSections.includes(item.id);
+            const isOpen = computedOpenSections.has(item.id);
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
+            const isActive = isMenuItemActive(item);
 
             return (
               <div key={item.id}>
@@ -159,26 +162,18 @@ const ParentSidebar = () => {
                     <AccordionHeader
                       onClick={() => toggleSection(item.id)}
                       className={`border-0 py-3 px-3 rounded-xl transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 ${
-                        isActiveLink(item.path)
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                          : 'text-gray-700'
+                        isActive
+                          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                          : "text-gray-700"
                       }`}
                     >
-                      <ListItemPrefix>
-                        <Icon className="h-5 w-5 flex-shrink-0" />
-                      </ListItemPrefix>
-                      <Typography variant="small" className="font-semibold truncate flex-1">
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <Typography
+                        variant="small"
+                        className="font-semibold truncate ml-3"
+                      >
                         {item.title}
                       </Typography>
-                      {item.badge && (
-                        <Chip
-                          value={item.badge.value}
-                          size="sm"
-                          className={`ml-2 ${
-                            item.badge.color === 'red' ? 'bg-red-500' : 'bg-blue-500'
-                          } text-white`}
-                        />
-                      )}
                     </AccordionHeader>
                     <AccordionBody className="py-1">
                       <List className="space-y-1 ml-2">
@@ -188,17 +183,17 @@ const ParentSidebar = () => {
                             <ListItem
                               key={index}
                               className={`py-2.5 px-3 rounded-lg transition-all duration-200 ${
-                                isActiveLink(child.path)
+                                isPathActive(child.path)
                                   ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-semibold'
                                   : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'
                               }`}
                             >
-                              <Link to={child.path} className="flex items-center gap-3 w-full min-w-0">
+                              <NavLink to={child.path} className="flex items-center gap-3 w-full min-w-0">
                                 <ChildIcon className="h-4 w-4 flex-shrink-0" />
                                 <Typography variant="small" className="font-medium truncate">
                                   {child.title}
                                 </Typography>
-                              </Link>
+                              </NavLink>
                             </ListItem>
                           );
                         })}
@@ -206,10 +201,10 @@ const ParentSidebar = () => {
                     </AccordionBody>
                   </Accordion>
                 ) : (
-                  <Link
+                  <NavLink
                     to={item.path}
                     className={`flex items-center gap-3 w-full py-3 px-3 rounded-xl transition-all duration-200 min-w-0 ${
-                      isActiveLink(item.path)
+                      isActive
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                         : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100'
                     }`}
@@ -218,16 +213,8 @@ const ParentSidebar = () => {
                     <Typography variant="small" className="font-semibold truncate flex-1">
                       {item.title}
                     </Typography>
-                    {item.badge && (
-                      <Chip
-                        value={item.badge.value}
-                        size="sm"
-                        className={`${
-                          item.badge.color === 'red' ? 'bg-red-500' : 'bg-blue-500'
-                        } text-white`}
-                      />
-                    )}
-                  </Link>
+                    
+                  </NavLink>
                 )}
               </div>
             );

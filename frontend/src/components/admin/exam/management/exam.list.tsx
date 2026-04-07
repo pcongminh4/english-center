@@ -18,13 +18,12 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
-  EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import { getAllExams, deleteExam, toggleActiveExam } from "../../../../services/exam.service";
 import type { Exam } from "../../../../types/exam/response";
 import type { GetExamRequest } from "../../../../types/exam/request";
 import ExamPagination from "./exam.pagination";
+import { BoltIcon } from "lucide-react";
 
 const ExamList: React.FC = () => {
   const navigate = useNavigate();
@@ -226,9 +225,9 @@ const ExamList: React.FC = () => {
                             title={exam.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
                           >
                             {exam.isActive ? (
-                              <EyeSlashIcon className="h-4 w-4 text-orange-600" />
+                              <BoltIcon className="h-4 w-4 text-orange-600" />
                             ) : (
-                              <EyeIcon className="h-4 w-4 text-green-600" />
+                              <BoltIcon className="h-4 w-4 text-green-600" />
                             )}
                           </IconButton>
                           <IconButton

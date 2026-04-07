@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Typography,
   Button,
@@ -13,13 +13,23 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
+const normalizePathname = (path: string) => {
+  if (!path) return "/";
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+};
+
 const TeacherSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const pathname = normalizePathname(location.pathname);
 
-  const isActiveLink = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+  const isPathActive = (path: string) => {
+    const targetPath = normalizePathname(path);
+    return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
   };
 
   const handleLogout = () => {
@@ -32,7 +42,8 @@ const TeacherSidebar = () => {
     {
       title: "Khóa Học Của Tôi",
       icon: BookOpenIcon,
-      path: "/teacher/courses",
+      path: "/teacher",
+      matchPaths: ["/teacher", "/teacher/courses"],
     },
     {
       title: "Lịch Rảnh",
@@ -45,6 +56,11 @@ const TeacherSidebar = () => {
       path: "/teacher/profile",
     },
   ];
+
+  const isMenuItemActive = (item: (typeof menuItems)[number]) => {
+    const matchPaths = item.matchPaths ?? [item.path];
+    return matchPaths.some((path) => isPathActive(path));
+  };
 
   return (
     <div className="bg-white border-r border-gray-200 w-64 h-screen flex flex-col shadow-xl overflow-x-hidden">
@@ -70,12 +86,13 @@ const TeacherSidebar = () => {
         <List className="space-y-1 min-w-0">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = isMenuItemActive(item);
             return (
-              <Link
+              <NavLink
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 w-full py-3 px-3 rounded-xl transition-all duration-200 min-w-0 ${
-                  isActiveLink(item.path)
+                  isActive
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
                     : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100"
                 }`}
@@ -84,7 +101,7 @@ const TeacherSidebar = () => {
                 <Typography variant="small" className="font-semibold truncate flex-1">
                   {item.title}
                 </Typography>
-              </Link>
+              </NavLink>
             );
           })}
         </List>

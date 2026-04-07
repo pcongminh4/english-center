@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Typography,
   Button,
@@ -16,7 +16,6 @@ import {
   UserGroupIcon,
   AcademicCapIcon,
   NewspaperIcon,
-  Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   DocumentDuplicateIcon,
   BuildingLibraryIcon,
@@ -24,31 +23,30 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
+const normalizePathname = (path: string) => {
+  if (!path) return "/";
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+};
+
 const AdminSidebar = memo(() => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [openSections, setOpenSections] = useState<string[]>(["dashboard"]);
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const location = useLocation();
 
-  const toggleSection = (section: string) => {
-    setOpenSections((prev) =>
-      prev.includes(section)
-        ? prev.filter((s) => s !== section)
-        : [...prev, section],
-    );
-  };
+  const pathname = normalizePathname(location.pathname);
 
-  const isActiveLink = (path: string) => {
-    return (
-      location.pathname === path || location.pathname.startsWith(path + "/")
-    );
-  };
+  const isPathActive = (path: string) => {
+    const targetPath = normalizePathname(path);
 
-  const handleLogout = () => {
-    // Clear auth state
-    useAuthStore.getState().logout();
-    // Navigate to home page
-    navigate("/");
+    if (targetPath === "/admin") {
+      return pathname === "/admin";
+    }
+
+    return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
   };
 
   const menuItems = [
@@ -62,7 +60,7 @@ const AdminSidebar = memo(() => {
       id: "users",
       title: "Quản lý người dùng",
       icon: UserGroupIcon,
-      path: "/admin/users",
+      path: "/admin/teachers",
       children: [
         { title: "Giáo viên", icon: AcademicCapIcon, path: "/admin/teachers" },
         { title: "Học sinh", icon: UserGroupIcon, path: "/admin/students" },
@@ -73,7 +71,7 @@ const AdminSidebar = memo(() => {
       id: "admissions",
       title: "Quản lý tuyển sinh",
       icon: DocumentDuplicateIcon,
-      path: "/admin/admissions",
+      path: "/admin/admissions/students",
       children: [
         {
           title: "Quản lý học sinh",
@@ -104,43 +102,50 @@ const AdminSidebar = memo(() => {
           icon: BuildingLibraryIcon,
           path: "/admin/classrooms",
         },
-        
       ],
     },
     {
       id: "content",
       title: "Quản lý bài kiểm tra",
       icon: NewspaperIcon,
-      path: "/admin/content",
-      children: [
-        { title: "Listening & Reading", icon: NewspaperIcon, path: "/admin/entrance-exam-lr" },
-        { title: "Speaking & Writing", icon: NewspaperIcon, path: "/admin/content/sw" },
-      ],
-    },
-    {
-      id: "settings",
-      title: "Cài đặt hệ thống",
-      icon: Cog6ToothIcon,
-      path: "/admin/settings",
+      path: "/admin/entrance-exam-lr",
       children: [
         {
-          title: "Cấu hình chung",
-          icon: Cog6ToothIcon,
-          path: "/admin/settings/general",
+          title: "Listening & Reading",
+          icon: NewspaperIcon,
+          path: "/admin/entrance-exam-lr",
         },
         {
-          title: "Quyền truy cập",
-          icon: UserGroupIcon,
-          path: "/admin/settings/permissions",
-        },
-        {
-          title: "Backup & Restore",
-          icon: DocumentDuplicateIcon,
-          path: "/admin/settings/backup",
+          title: "Speaking & Writing",
+          icon: NewspaperIcon,
+          path: "/admin/content/sw",
         },
       ],
     },
   ];
+
+  const activeSectionIds = menuItems
+    .filter((item) =>
+      item.children?.some((child) => isPathActive(child.path)),
+    )
+    .map((item) => item.id);
+
+  const computedOpenSections = new Set([...openSections, ...activeSectionIds]);
+
+  const toggleSection = (section: string) => {
+    setOpenSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section],
+    );
+  };
+
+  const handleLogout = () => {
+    // Clear auth state
+    useAuthStore.getState().logout();
+    // Navigate to home page
+    navigate("/");
+  };
 
   return (
     <div className="bg-white border-r border-gray-200 w-64 h-screen flex flex-col shadow-xl overflow-x-hidden">
@@ -165,9 +170,13 @@ const AdminSidebar = memo(() => {
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <List className="space-y-1 min-w-0">
           {menuItems.map((item) => {
-            const isOpen = openSections.includes(item.id);
+            const isOpen = computedOpenSections.has(item.id);
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
+            const isSectionActive =
+              hasChildren && item.children
+                ? item.children.some((child) => isPathActive(child.path))
+                : isPathActive(item.path);
 
             return (
               <div key={item.id}>
@@ -185,7 +194,7 @@ const AdminSidebar = memo(() => {
                     <AccordionHeader
                       onClick={() => toggleSection(item.id)}
                       className={`border-0 py-3 px-3 rounded-xl transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 ${
-                        isActiveLink(item.path)
+                        isSectionActive
                           ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
                           : "text-gray-700"
                       }`}
@@ -208,12 +217,12 @@ const AdminSidebar = memo(() => {
                             <ListItem
                               key={index}
                               className={`py-2.5 px-3 rounded-lg transition-all duration-200 ${
-                                isActiveLink(child.path)
+                                isPathActive(child.path)
                                   ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-semibold"
                                   : "text-gray-600 hover:bg-gray-50 border-l-4 border-transparent"
                               }`}
                             >
-                              <Link
+                              <NavLink
                                 to={child.path}
                                 onClick={(e) => e.stopPropagation()}
                                 className="flex items-center gap-3 w-full min-w-0"
@@ -225,7 +234,7 @@ const AdminSidebar = memo(() => {
                                 >
                                   {child.title}
                                 </Typography>
-                              </Link>
+                              </NavLink>
                             </ListItem>
                           );
                         })}
@@ -233,10 +242,10 @@ const AdminSidebar = memo(() => {
                     </AccordionBody>
                   </Accordion>
                 ) : (
-                  <Link
+                  <NavLink
                     to={item.path}
                     className={`flex items-center gap-3 w-full py-3 px-3 rounded-xl transition-all duration-200 min-w-0 ${
-                      isActiveLink(item.path)
+                      isSectionActive
                         ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
                         : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100"
                     }`}
@@ -248,7 +257,7 @@ const AdminSidebar = memo(() => {
                     >
                       {item.title}
                     </Typography>
-                  </Link>
+                  </NavLink>
                 )}
               </div>
             );

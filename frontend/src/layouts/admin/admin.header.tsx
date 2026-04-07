@@ -12,7 +12,6 @@ import {
 } from "@material-tailwind/react";
 import {
   MagnifyingGlassIcon,
-  BellIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -94,18 +93,6 @@ const AdminHeader = memo(({ toggleSidebar, openSidebar }: AdminHeaderProps) => {
 
         {/* Right Section */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Notifications */}
-          <div className="relative">
-            <IconButton
-              variant="text"
-              size="sm"
-              className="hover:bg-blue-50 text-gray-700 relative transition-all"
-            >
-              <BellIcon className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-            </IconButton>
-          </div>
-
           {/* User Menu */}
           <Menu>
             <MenuHandler>

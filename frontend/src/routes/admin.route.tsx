@@ -54,6 +54,7 @@ import SpeakingExamEditor from "../components/admin/speaking/editor/speaking.edi
 
 // SW Dashboard component
 import SWDashboard from "../components/admin/sw-dashboard/sw.dashboard";
+import AdminDashboard from "../components/admin/dashboard/dashboard";
 
 // Statistics component
 import StatisticsPage from "../components/admin/statistics/StatisticsPage";
@@ -73,7 +74,11 @@ const AdminRoutes: RouteObject = {
   children: [
     {
       index: true,
-      element: <div>Admin Dashboard</div>,
+      element: <AdminDashboard />,
+    },
+    {
+      path: "dashboard",
+      element: <AdminDashboard />,
     },
     // Teacher routes
     {

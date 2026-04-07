@@ -18,13 +18,12 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
-  EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import { getAllSpeakingExams, deleteSpeaking, toggleActiveSpeaking } from "../../../../services/speaking.service";
 import type { SpeakingResponse } from "../../../../types/speaking/response";
 import type { GetSpeakingRequest } from "../../../../types/speaking/request";
 import SpeakingPagination from "./speaking.pagination";
+import { BoltIcon } from "lucide-react";
 
 const SpeakingExamList: React.FC = () => {
   const navigate = useNavigate();
@@ -226,9 +225,9 @@ const SpeakingExamList: React.FC = () => {
                             title={exam.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
                           >
                             {exam.isActive ? (
-                              <EyeSlashIcon className="h-4 w-4 text-orange-600" />
+                              <BoltIcon className="h-4 w-4 text-orange-600" />
                             ) : (
-                              <EyeIcon className="h-4 w-4 text-green-600" />
+                              <BoltIcon className="h-4 w-4 text-green-600" />
                             )}
                           </IconButton>
                           <IconButton

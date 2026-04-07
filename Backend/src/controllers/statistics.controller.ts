@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { 
   getCourseRegistrationStatsService, 
+  getRevenueStatsService,
   getRevenueStatsByUserService,
   getAllCoursesForFilterService,
   getAdmissionStudentsService,
@@ -53,7 +54,7 @@ export class StatisticsController {
         month: month as string | undefined,
         year: year ? parseInt(year as string, 10) : undefined,
       });
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: stats,
       });

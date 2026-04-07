@@ -2,7 +2,7 @@ import prisma from "../config/database";
 
 type StatisticsPeriodType = "day" | "month" | "year";
 
-interface StatisticsPeriodFilter {
+export interface StatisticsPeriodFilter {
   periodType?: StatisticsPeriodType;
   date?: string;
   month?: string;
@@ -11,7 +11,7 @@ interface StatisticsPeriodFilter {
 
 const isValidDate = (date: Date) => !Number.isNaN(date.getTime());
 
-const getPeriodRange = (filter?: StatisticsPeriodFilter) => {
+export const getPeriodRange = (filter?: StatisticsPeriodFilter) => {
   const now = new Date();
   const periodType = filter?.periodType ?? "month";
 
