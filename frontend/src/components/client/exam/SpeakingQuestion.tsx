@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Save, Image as ImageIcon, FileText } from "lucide-react";
+import { Save, Image as ImageIcon } from "lucide-react";
 import { AudioRecorder } from "./AudioRecorder";
 import type { SpeakingQuestion as SpeakingQuestionType } from "../../../types/entrance-exam/speaking.types";
 

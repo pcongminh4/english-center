@@ -14,9 +14,22 @@ const InstructorCard: React.FC<Props> = ({ schedule }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Info */}
         <div className="flex items-center gap-4">
+          <img
+            src={
+              schedule.teacher.avatar
+                ? schedule.teacher.avatar.startsWith('http')
+                  ? schedule.teacher.avatar
+                  : `${import.meta.env.VITE_FILE_URL}/uploads/teachers/${schedule.teacher.avatar}`
+                : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                  schedule.teacher.fullname
+                )}`
+            }
+            alt={schedule.teacher.fullname}
+            className="w-12 h-12 rounded-full border-2 border-orange-100"
+          />
           <div>
-            <h3 className="text-sm text-gray-500">Giảng viên</h3>
             <h3 className="font-bold text-gray-800">{schedule.teacher.fullname}</h3>
+            <p className="text-xs text-gray-500">{schedule.teacher.degree}</p>
           </div>
         </div>
 
@@ -29,6 +42,23 @@ const InstructorCard: React.FC<Props> = ({ schedule }) => {
             max={schedule.totalSlot}
             isLocked={schedule.totalRegister >= schedule.totalSlot}
           />
+
+          {/* {schedule.totalRegister >= schedule.totalSlot ? (
+            <button
+              disabled
+              className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed"
+            >
+              <Lock size={16} /> Khóa
+            </button>
+          ) : (
+            <button
+              className="px-8 py-2 bg-gradient-to-b from-blue-400 to-blue-600 text-white font-semibold rounded-lg
+              shadow-[0_6px_0_0_rgb(29,78,216)] active:translate-y-1 active:shadow-[0_2px_0_0_rgb(29,78,216)] transition-all duration-130"
+            >
+              Đăng ký
+            </button>
+
+          )} */}
         </div>
       </div>
 
@@ -38,13 +68,7 @@ const InstructorCard: React.FC<Props> = ({ schedule }) => {
         </h4>
 
         <div className="grid md:grid-cols-3 gap-3">
-          {
-            schedule.sessions?.length === 0 && Array.isArray(schedule.sessions) ? (
-              <div className="text-sm text-gray-500 col-span-full text-center py-4">
-                Không có lịch học nào được thiết lập cho lịch này.
-              </div>
-            ) : (
-           schedule?.sessions?.map((s, i) => (
+          {schedule.sessions?.map((s, i) => (
             <div
               key={s.id ?? i}
               className="bg-gray-50 rounded-lg p-3 flex gap-2"
@@ -56,8 +80,7 @@ const InstructorCard: React.FC<Props> = ({ schedule }) => {
                 {s.startTime} - {s.endTime}
               </span>
             </div>
-          )))
-        }
+          ))}
         </div>
 
       </div>

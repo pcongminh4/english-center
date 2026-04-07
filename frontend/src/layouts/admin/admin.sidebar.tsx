@@ -15,13 +15,11 @@ import {
   HomeIcon,
   UserGroupIcon,
   AcademicCapIcon,
-  DocumentTextIcon,
   NewspaperIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   DocumentDuplicateIcon,
   BuildingLibraryIcon,
-  CalendarIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";

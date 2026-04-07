@@ -2,6 +2,7 @@ import type { ApiResponse } from "../types/api.type";
 import type { ScheduleListResponse, ScheduleResponse } from "../types/schedule/schedule.response";
 import type {
   ScheduleStudentListResponse,
+  StudentScheduleByIdResponse,
   StudentSchedulesByStudentIdResponse,
 } from "../types/schedule/student-schedule.response";
 import axios from "../configs/axios.config";
@@ -51,6 +52,29 @@ export const getAllSchedules = async (
     "/schedule",
     {
       params: { page, limit },
+    }
+  );
+
+  return response.data;
+};
+
+// Tìm kiếm nâng cao theo tên khóa học + ngày bắt đầu
+export const searchSchedulesAdvanced = async (
+  page = 1,
+  limit = 10,
+  params?: {
+    courseName?: string;
+    startDate?: string;
+  },
+): Promise<ApiResponse<ScheduleListResponse>> => {
+  const response = await axios.get<ApiResponse<ScheduleListResponse>>(
+    "/schedule/search/advanced",
+    {
+      params: {
+        page,
+        limit,
+        ...params,
+      },
     }
   );
 

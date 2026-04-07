@@ -5,8 +5,6 @@ import {
   Typography,
   Button,
   Chip,
-  Select,
-  Option,
   Checkbox,
 } from "@material-tailwind/react";
 import { useEnrollmentStore } from "../../../../stores/enrollment.store";

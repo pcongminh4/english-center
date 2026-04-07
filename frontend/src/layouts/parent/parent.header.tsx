@@ -9,7 +9,6 @@ import {
   MenuHandler,
   MenuList,
   MenuItem,
-  Badge,
 } from "@material-tailwind/react";
 import {
   MagnifyingGlassIcon,

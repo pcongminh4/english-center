@@ -6,7 +6,7 @@ import { Courses } from '../pages/student/Courses';
 import { Profile } from '../pages/student/Profile';
 import ScanQR from '../pages/student/ScanQR';
 import { RoleBasedRedirect } from '../components/common/RoleBasedRedirect';
-import CourseDetail from '../pages/client/courseDetail';
+import CourseDetail from '../pages/student/CourseDetail';
 import CourseRegistration from '../pages/student/CourseRegistration';
 import StudentPaymentResult from '../pages/student/PaymentResult';
 

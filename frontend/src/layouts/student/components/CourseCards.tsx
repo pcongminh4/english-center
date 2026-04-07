@@ -1,4 +1,4 @@
-import { BookOpen, User, TrendingUp, Calendar, MapPin, Clock } from 'lucide-react';
+import { BookOpen, User, TrendingUp, Calendar, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Course {

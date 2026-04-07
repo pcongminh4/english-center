@@ -5,8 +5,6 @@ import type {
   CreateExamRequest,
   UpdateExamRequest,
   GetExamRequest,
-  UpsertPart1Request,
-  UpsertPart2Request,
   UpsertPart3Request,
 } from "../types/exam/request";
 

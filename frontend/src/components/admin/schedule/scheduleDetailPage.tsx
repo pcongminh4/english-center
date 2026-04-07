@@ -4,7 +4,6 @@ import type { ScheduleResponse } from "../../../types/schedule/schedule.response
 import { getScheduleById } from "../../../services/schedule.service";
 import WeeklySchedule from "../../../components/admin/schedule/scheduleDetailPage/weeklySchedule";
 import TeacherInfo from "../../../components/admin/schedule/scheduleDetailPage/teacherInfo";
-import CourseInfo from "../../../components/admin/schedule/scheduleDetailPage/courseInfo";
 import StudentManagement from "../../../components/admin/schedule/scheduleDetailPage/studentManagement";
 import HeaderBar from "../../../components/admin/schedule/scheduleDetailPage/headerBar";
 import TopStats from "../../../components/admin/schedule/scheduleDetailPage/topStats";

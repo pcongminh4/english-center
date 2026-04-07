@@ -8,7 +8,6 @@ import type {
 import type {
   CreateCourseTestRequest,
   UpdateCourseTestRequest,
-  GetCourseTestRequest,
 } from "../types/coursetest/request";
 
 // Service

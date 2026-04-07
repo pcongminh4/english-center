@@ -1,4 +1,4 @@
-import { CalendarDays, Percent, Users } from "lucide-react";
+import { Percent } from "lucide-react";
 import formatPrice from "../../helpers/formatPrice";
 import { useNavigate } from "react-router";
 import type { Course } from "../../types/course/response";

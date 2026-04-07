@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, GraduationCap } from 'lucide-react';
 import type { Course } from '../../types/course/response';
 import formatPrice from '../../helpers/formatPrice';
+import Badge from './Badge';
 
 interface CourseHeaderProps {
   course: Course;
@@ -19,7 +20,7 @@ export const CourseHeader: React.FC<CourseHeaderProps> = ({ course }) => {
         {/* Badge */}
         {course.maxBand !== null && course.maxBand > 0 && (
           <div className="absolute top-4 left-4 z-10 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md">
-            Target {course.maxBand}+
+            Target {course.minBand} - {course.maxBand}
           </div>
         )}
 
@@ -36,17 +37,16 @@ export const CourseHeader: React.FC<CourseHeaderProps> = ({ course }) => {
       {/* Content Side */}
       <div className="flex-1 space-y-4">
         <div className="flex flex-wrap gap-2">
-          {/* Tags format TOEIC */}
-          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold border border-amber-100">
-            <BookOpen size={14} />
-            <span>
-              {course.courseSkill === "ALL" ? "4 Skills" : course.courseSkill?.replace("_", " & ")}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-xs font-bold border border-indigo-100">
-            <GraduationCap size={14} />
-            <span>ETS Format 2026</span>
-          </div>
+          <Badge
+            icon={BookOpen}
+            text={course.courseSkill.replace("_", " & ")}
+            colorClass="text-amber-600 bg-amber-50 border border-amber-100"
+          />
+          <Badge
+            icon={GraduationCap}
+            text="ETS Format 2026"
+            colorClass="text-indigo-600 bg-indigo-50 border border-indigo-100"
+          />
         </div>
 
         <div>
@@ -54,12 +54,8 @@ export const CourseHeader: React.FC<CourseHeaderProps> = ({ course }) => {
             {course.name}
           </h1>
           <p className="text-gray-500 text-sm mt-2 leading-relaxed">
-            Lộ trình tinh gọn giúp bứt phá điểm số TOEIC{" "}
-            {course.courseSkill === "ALL" ? "4 kỹ năng" : "2 kỹ năng"} trong 2 tháng.
-            {(course.courseSkill === "READING_LISTENING" ||
-              course.courseSkill === "SPEAKING_WRITING") && (
-                <> Tập trung vào kỹ thuật giải đề ETS mới nhất và mẹo tránh bẫy Part 5, 6, 7.</>
-              )}
+            Lộ trình tinh gọn giúp bứt phá điểm số TOEIC {course.courseSkill.replace("_", " & ")} trong 2 tháng.
+            Tập trung vào kỹ thuật giải đề ETS mới nhất và mẹo tránh bẫy Part 5, 6, 7.
           </p>
         </div>
 

@@ -11,6 +11,7 @@ import {
   getAllSchedules,
   getScheduleById,
   getUpcomingSchedules,
+  searchSchedulesAdvanced,
   updateSchedule,
 } from "../controllers/schedule.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
@@ -118,6 +119,18 @@ router.get(
   authenticate,
   authorize("ADMIN"),
   getAllSchedules
+);
+
+/**
+ * @route   GET /api/schedules/search/advanced
+ * @desc    Advanced search schedules by courseName and startDate
+ * @access  ADMIN
+ */
+router.get(
+  "/search/advanced",
+  authenticate,
+  authorize("ADMIN"),
+  searchSchedulesAdvanced
 );
 
 /**

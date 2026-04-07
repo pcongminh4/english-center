@@ -1,4 +1,4 @@
-import { User, Mail, Phone, Calendar, BookOpen } from 'lucide-react';
+import { User, Calendar, BookOpen } from 'lucide-react';
 
 interface StudentProfileCardProps {
   avatar?: string;

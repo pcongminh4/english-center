@@ -7,6 +7,7 @@ import {
   getAllSchedulesService,
   getScheduleByIdService,
   getUpcomingSchedulesService,
+  searchSchedulesAdvancedService,
   updateScheduleService,
 } from "../services/schedule.service";
 
@@ -58,6 +59,29 @@ export const getAllSchedules = async (req: Request, res: Response) => {
   });
 
   return customRes.success(result, "Lấy danh sách lịch học thành công");
+};
+
+// Tìm kiếm nâng cao theo tên khóa học + ngày bắt đầu
+export const searchSchedulesAdvanced = async (req: Request, res: Response) => {
+  const customRes = res as CustomResponse;
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const courseName = req.query.courseName
+    ? String(req.query.courseName)
+    : undefined;
+  const startDate = req.query.startDate
+    ? String(req.query.startDate)
+    : undefined;
+
+  const result = await searchSchedulesAdvancedService({
+    page,
+    limit,
+    courseName,
+    startDate,
+  });
+
+  return customRes.success(result, "Tìm kiếm lịch học thành công");
 };
 
 // Lấy chi tiết Schedule theo ID

@@ -299,6 +299,87 @@ export const getAllSchedulesService = async ({
   };
 };
 
+// Tìm kiếm nâng cao theo tên khóa học + ngày bắt đầu
+export const searchSchedulesAdvancedService = async ({
+  page = 1,
+  limit = 10,
+  courseName,
+  startDate,
+}: {
+  page?: number;
+  limit?: number;
+  courseName?: string;
+  startDate?: string;
+}): Promise<SchedulePagingResponse> => {
+  const skip = (page - 1) * limit;
+
+  let startOfDay: Date | undefined;
+  let endOfDay: Date | undefined;
+
+  if (startDate) {
+    const parsedDate = new Date(startDate);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new AppError("Ngày bắt đầu không hợp lệ", 400);
+    }
+
+    startOfDay = new Date(parsedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    endOfDay = new Date(parsedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+  }
+
+  const where: Prisma.ScheduleWhereInput = {
+    ...(courseName
+      ? {
+          course: {
+            name: {
+              contains: courseName.trim(),
+            },
+          },
+        }
+      : {}),
+    ...(startOfDay && endOfDay
+      ? {
+          startTime: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        }
+      : {}),
+  };
+
+  const [totalItems, schedules] = await prisma.$transaction([
+    prisma.schedule.count({ where }),
+    prisma.schedule.findMany({
+      where,
+      orderBy: { startTime: "asc" },
+      skip,
+      take: limit,
+      include: {
+        course: true,
+        sessions: true,
+        classroom: true,
+        teacher: {
+          include: {
+            user: true,
+            freeDays: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    data: schedules.map(toScheduleResponse),
+    page,
+    limit,
+    totalItems,
+    totalPages: Math.ceil(totalItems / limit),
+  };
+};
+
 // Lấy chi tiết Schedule theo ID
 export const getScheduleByIdService = async (
   id: number
