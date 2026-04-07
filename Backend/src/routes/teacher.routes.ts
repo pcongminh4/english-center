@@ -9,6 +9,8 @@ import {
   createTeacher,
   getAllTeachers,
   getTeacherById,
+  getTeacherMe,
+  updateTeacherMe,
   updateTeacher,
   deleteTeacher,
 } from "../controllers/teacher.controller";
@@ -38,6 +40,28 @@ router.post(
  * @access  Private (Admin, Teacher)
  */
 router.get("/", authenticate, authorize("ADMIN", "TEACHER"), getAllTeachers);
+
+/**
+ * @route   GET /api/teachers/me
+ * @desc    Lấy thông tin giáo viên hiện tại (từ JWT)
+ * @access  Private (Teacher)
+ */
+router.get("/me", authenticate, authorize("TEACHER"), getTeacherMe);
+
+/**
+ * @route   PUT /api/teachers/me
+ * @desc    Cập nhật giáo viên hiện tại (từ JWT)
+ * @access  Private (Teacher)
+ */
+router.put(
+  "/me",
+  authenticate,
+  authorize("TEACHER"),
+  upload.single("avatar"),
+  updateTeacherValidation,
+  validate,
+  updateTeacherMe,
+);
 
 /**
  * @route   GET /api/teachers/:id

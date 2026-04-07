@@ -26,6 +26,7 @@ import { useAuthStore } from "../../stores/auth.store";
 
 const AdminSidebar = memo(() => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [openSections, setOpenSections] = useState<string[]>(["dashboard"]);
   const location = useLocation();
 
@@ -151,7 +152,7 @@ const AdminSidebar = memo(() => {
           </div>
           <div>
             <Typography variant="h6" className="font-bold text-white">
-              Admin Panel
+              Bảng điều khiển
             </Typography>
             <Typography variant="small" className="text-blue-100">
               Hệ thống quản trị
@@ -266,13 +267,13 @@ const AdminSidebar = memo(() => {
               variant="small"
               className="font-semibold text-gray-800 truncate"
             >
-              Admin User
+              {user?.fullname || "Quản trị viên"}
             </Typography>
             <Typography
               variant="small"
               className="text-gray-500 text-xs truncate"
             >
-              admin@university.edu.vn
+              {user?.email || "admin@university.edu.vn"}
             </Typography>
           </div>
         </div>

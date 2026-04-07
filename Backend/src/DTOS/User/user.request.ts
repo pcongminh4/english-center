@@ -13,3 +13,10 @@ export interface GetUserRequest {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
+
+export interface UpdateUserRequest {
+  phone?: string;
+  fullname?: string;
+  email?: string;
+  password?: string;
+}

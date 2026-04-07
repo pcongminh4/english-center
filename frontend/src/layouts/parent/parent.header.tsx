@@ -4,7 +4,6 @@ import {
   Typography,
   IconButton,
   Input,
-  Avatar,
   Menu,
   MenuHandler,
   MenuList,
@@ -28,9 +27,11 @@ const ParentHeader = ({
   toggleSidebar: () => void;
   openSidebar: boolean;
 }) => {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const initial = user?.fullname?.trim()?.charAt(0)?.toUpperCase() || "P";
 
   const handleLogout = () => {
     // Clear auth state
@@ -118,18 +119,17 @@ const ParentHeader = ({
           <Menu>
             <MenuHandler>
               <div className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-1.5 sm:p-2 transition-colors">
-                <Avatar
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=32&h=32&fit=crop&crop=face"
-                  alt="Parent"
-                  size="sm"
-                  className="border-2 border-blue-600 ring-2 ring-blue-100"
-                />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center border-2 border-blue-600 ring-2 ring-blue-100">
+                  <span className="text-white font-bold text-sm">{initial}</span>
+                </div>
                 <div className="hidden lg:block">
                   <Typography variant="small" className="font-semibold text-gray-800">
-                    Nguyễn Thị Mai
+                    {user?.fullname || "Phụ huynh"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs">
-                    Phụ huynh
+                    {user?.email && user?.phone
+                      ? `${user.email} • ${user.phone}`
+                      : user?.phone || user?.email || ""}
                   </Typography>
                 </div>
               </div>
@@ -139,18 +139,21 @@ const ParentHeader = ({
                 onClick={handleProfile}
                 className="flex items-center gap-3 hover:bg-blue-50 text-gray-700 py-3"
               >
-                <Avatar
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=32&h=32&fit=crop&crop=face"
-                  alt="Parent"
-                  size="sm"
-                  className="border-2 border-blue-600"
-                />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center border-2 border-blue-600">
+                  <span className="text-white font-bold text-sm">{initial}</span>
+                </div>
                 <div className="flex-1 min-w-0">
                   <Typography variant="small" className="font-semibold text-gray-800 truncate">
-                    Nguyễn Thị Mai
+                    {user?.fullname || "Phụ huynh"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs truncate">
-                    mai.nguyen@email.com
+                    {user?.email || ""}
+                  </Typography>
+                  <Typography
+                    variant="small"
+                    className="text-gray-500 text-xs truncate"
+                  >
+                    {user?.phone || ""}
                   </Typography>
                 </div>
               </MenuItem>

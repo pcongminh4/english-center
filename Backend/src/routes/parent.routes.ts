@@ -8,8 +8,10 @@ import {
 import {
   createParent,
   getAllParents,
+  getParentMe,
   getParentById,
   updateParent,
+  updateParentMe,
   deleteParent,
   linkStudentToParent,
   unlinkStudentFromParent,
@@ -37,6 +39,27 @@ router.post(
  * @access  Private (Admin, Teacher)
  */
 router.get("/", authenticate, authorize("ADMIN", "TEACHER"), getAllParents);
+
+/**
+ * @route   GET /api/parents/me
+ * @desc    Lấy thông tin phụ huynh hiện tại
+ * @access  Private (Parent)
+ */
+router.get("/me", authenticate, authorize("PARENT"), getParentMe);
+
+/**
+ * @route   PUT /api/parents/me
+ * @desc    Cập nhật phụ huynh hiện tại
+ * @access  Private (Parent)
+ */
+router.put(
+  "/me",
+  authenticate,
+  authorize("PARENT"),
+  updateParentValidation,
+  validate,
+  updateParentMe,
+);
 
 /**
  * @route   GET /api/parents/:id

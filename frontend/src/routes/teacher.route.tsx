@@ -6,6 +6,7 @@ import TeacherCourseDetail from "../components/teacher/course-detail/teacher.cou
 import TeacherAvailability from "../components/teacher/availability/teacher.availability";
 import ClassAttendance from "../pages/teacher/ClassAttendance";
 import CourseTestStudentScores from "../components/teacher/course-detail/course-score/courseTest-studentScores";
+import TeacherProfile from "../pages/teacher/Profile";
 
 const TeacherRoutes: RouteObject = {
   path: "teacher",
@@ -38,6 +39,10 @@ const TeacherRoutes: RouteObject = {
     {
       path: "attendance/:sessionId",
       element: <ClassAttendance />,
+    },
+    {
+      path: "profile",
+      element: <TeacherProfile />,
     },
   ],
 };

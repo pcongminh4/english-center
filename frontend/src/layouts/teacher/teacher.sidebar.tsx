@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
@@ -37,6 +38,11 @@ const TeacherSidebar = () => {
       title: "Lịch Rảnh",
       icon: CalendarDaysIcon,
       path: "/teacher/availability",
+    },
+    {
+      title: "Thông tin cá nhân",
+      icon: UserCircleIcon,
+      path: "/teacher/profile",
     },
   ];
 
@@ -97,7 +103,7 @@ const TeacherSidebar = () => {
               {user?.fullname || "Giáo viên"}
             </Typography>
             <Typography variant="small" className="text-gray-500 text-xs truncate">
-              {user?.email || ""}
+              {user?.email && user?.phone ? `${user.email} • ${user.phone}` : user?.phone || user?.email || ""}
             </Typography>
           </div>
         </div>

@@ -23,6 +23,12 @@ export const getTeacherByIdService = async (
   return res.data;
 };
 
+export const getTeacherMeService = async (): Promise<ApiResponse<TeacherResponse>> => {
+  const URL_API = "/teachers/me";
+  const res = await axios.get(URL_API);
+  return res.data;
+};
+
 export const createTeacherService = async (
   data: CreateTeacherRequest
 ): Promise<ApiResponse<TeacherResponse>> => {
@@ -50,6 +56,28 @@ export const updateTeacherService = async (
   data: UpdateTeacherRequest
 ): Promise<ApiResponse<TeacherResponse>> => {
   const URL_API = `/teachers/${id}`;
+  const formData = new FormData();
+
+  if (data.phone) formData.append("phone", data.phone);
+  if (data.fullname) formData.append("fullname", data.fullname);
+  if (data.email) formData.append("email", data.email);
+  if (data.password) formData.append("password", data.password);
+  if (data.degree) formData.append("degree", data.degree);
+  if (data.isTeaching !== undefined) formData.append("isTeaching", String(data.isTeaching));
+  if (data.avatar) formData.append("avatar", data.avatar);
+
+  const res = await axios.put(URL_API, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+export const updateTeacherMeService = async (
+  data: UpdateTeacherRequest
+): Promise<ApiResponse<TeacherResponse>> => {
+  const URL_API = "/teachers/me";
   const formData = new FormData();
 
   if (data.phone) formData.append("phone", data.phone);

@@ -30,6 +30,7 @@ import {
 import { useAuthStore } from "../../stores/auth.store";
 
 const ParentSidebar = () => {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [openSections, setOpenSections] = useState<string[]>(["overview"]);
   const location = useLocation();
@@ -238,14 +239,19 @@ const ParentSidebar = () => {
       <div className="p-3 border-t border-gray-200 bg-gray-50 flex-shrink-0">
         <div className="flex items-center gap-3 p-2 rounded-lg bg-white border border-gray-200 overflow-hidden shadow-sm">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-sm">M</span>
+            <span className="text-white font-bold text-sm">
+              {user?.fullname?.trim()?.charAt(0)?.toUpperCase() || "P"}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
             <Typography variant="small" className="font-semibold text-gray-800 truncate">
-              Nguyễn Thị Mai
+              {user?.fullname || "Phụ huynh"}
             </Typography>
             <Typography variant="small" className="text-gray-500 text-xs truncate">
-              mai.nguyen@email.com
+              {user?.email || ""}
+            </Typography>
+            <Typography variant="small" className="text-gray-500 text-xs truncate">
+              {user?.phone || ""}
             </Typography>
           </div>
         </div>

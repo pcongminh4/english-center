@@ -5,6 +5,7 @@ import ChildrenManagement from '../pages/parent/ChildrenManagement';
 import CourseManagement from '../pages/parent/CourseManagement';
 import TimeTableManament from '../pages/parent/TimeTableManament';
 import AttendanceManagement from '../pages/parent/AttendanceManagement';
+import ParentProfile from '../pages/parent/Profile';
 
 const ParentRoutes: RouteObject = {
   path: 'parent',
@@ -21,6 +22,10 @@ const ParentRoutes: RouteObject = {
     {
       path: 'academic/results',
       element: <CourseManagement />,
+    },
+    {
+      path: 'profile',
+      element: <ParentProfile />,
     },
     {
       path: 'academic/attendance',

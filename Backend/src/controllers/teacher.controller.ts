@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
 import { CustomResponse } from "../config/response.custom";
+import { AppError } from "../middleware/errorHandler";
 import {
   createTeacherService,
   getAllTeachersService,
   getTeacherByIdService,
   updateTeacherService,
+  getTeacherByUserIdService,
+  updateTeacherByUserIdService,
   deleteTeacherService,
 } from "../services/teacher.service";
 import { GetTeacherRequest } from "../DTOS/Teacher";
@@ -53,8 +56,31 @@ export const getAllTeachers = async (req: Request, res: Response) => {
 export const getTeacherById = async (req: Request, res: Response) => {
   const customRes = res as CustomResponse;
   const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError("ID giáo viên không hợp lệ", 400);
+  }
   const result = await getTeacherByIdService(id);
   return customRes.success(result, "Lấy thông tin giáo viên thành công");
+};
+
+// Lấy giáo viên hiện tại (từ JWT)
+export const getTeacherMe = async (req: Request, res: Response) => {
+  const customRes = res as CustomResponse;
+  const result = await getTeacherByUserIdService(req.user.id);
+  return customRes.success(result, "Lấy thông tin giáo viên thành công");
+};
+
+// Cập nhật giáo viên hiện tại (từ JWT)
+export const updateTeacherMe = async (req: Request, res: Response) => {
+  const customRes = res as CustomResponse;
+
+  // Nếu có upload avatar
+  if (req.file) {
+    req.body.avatar = req.file.filename;
+  }
+
+  const result = await updateTeacherByUserIdService(req.user.id, req.body);
+  return customRes.success(result, "Cập nhật giáo viên thành công");
 };
 
 // Cập nhật giáo viên

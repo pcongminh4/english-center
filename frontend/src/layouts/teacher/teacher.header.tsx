@@ -11,6 +11,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
@@ -23,6 +24,10 @@ const TeacherHeader = ({
 }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+
+  const handleProfile = () => {
+    navigate("/teacher/profile");
+  };
 
   const handleLogout = () => {
     logout();
@@ -70,7 +75,7 @@ const TeacherHeader = ({
                     {user?.fullname || "Giáo viên"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs">
-                    Giáo viên
+                    {user?.email && user?.phone ? `${user.email} • ${user.phone}` : user?.phone || user?.email || ""}
                   </Typography>
                 </div>
               </div>
@@ -87,11 +92,20 @@ const TeacherHeader = ({
                     {user?.fullname || "Giáo viên"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs truncate">
-                    {user?.email || ""}
+                    {user?.email && user?.phone
+                      ? `${user.email} • ${user.phone}`
+                      : user?.phone || user?.email || ""}
                   </Typography>
                 </div>
               </MenuItem>
               <hr className="my-1 border-gray-200" />
+              <MenuItem
+                onClick={handleProfile}
+                className="flex items-center gap-2 hover:bg-blue-50 text-gray-700 py-2"
+              >
+                <UserCircleIcon className="h-4 w-4" />
+                <Typography variant="small">Thông tin cá nhân</Typography>
+              </MenuItem>
               <MenuItem
                 onClick={handleLogout}
                 className="flex items-center gap-2 hover:bg-red-50 text-red-600 py-2"

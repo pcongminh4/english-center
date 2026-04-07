@@ -29,6 +29,7 @@ const AdminHeader = memo(({ toggleSidebar, openSidebar }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const user = useAuthStore((state) => state.user);
 
   const handleLogout = () => {
     // Clear auth state
@@ -117,10 +118,10 @@ const AdminHeader = memo(({ toggleSidebar, openSidebar }: AdminHeaderProps) => {
                 />
                 <div className="hidden lg:block">
                   <Typography variant="small" className="font-semibold text-gray-800">
-                    Admin User
+                    {user?.fullname || "Quản trị viên"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs">
-                    Quản trị viên
+                    {user?.email || "admin@university.edu.vn"}
                   </Typography>
                 </div>
               </div>
@@ -138,10 +139,10 @@ const AdminHeader = memo(({ toggleSidebar, openSidebar }: AdminHeaderProps) => {
                 />
                 <div className="flex-1 min-w-0">
                   <Typography variant="small" className="font-semibold text-gray-800 truncate">
-                    Admin User
+                    {user?.fullname || "Quản trị viên"}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs truncate">
-                    admin@university.edu.vn
+                    {user?.email || "admin@university.edu.vn"}
                   </Typography>
                 </div>
               </MenuItem>

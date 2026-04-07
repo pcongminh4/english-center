@@ -45,6 +45,12 @@ export const updateParentValidation = [
     .withMessage("Email không hợp lệ")
     .normalizeEmail(),
 
+  body("password")
+    .optional()
+    .trim()
+    .isLength({ min: 6 })
+    .withMessage("Mật khẩu phải có ít nhất 6 ký tự"),
+
   body("phone")
     .optional()
     .trim()

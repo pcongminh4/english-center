@@ -23,6 +23,12 @@ export const getParentByIdService = async (
   return res.data;
 };
 
+export const getParentMeService = async (): Promise<ApiResponse<ParentResponse>> => {
+  const URL_API = "/parents/me";
+  const res = await axios.get(URL_API);
+  return res.data;
+};
+
 export const createParentService = async (
   data: CreateParentRequest
 ): Promise<ApiResponse<ParentResponse>> => {
@@ -36,6 +42,14 @@ export const updateParentService = async (
   data: UpdateParentRequest
 ): Promise<ApiResponse<ParentResponse>> => {
   const URL_API = `/parents/${id}`;
+  const res = await axios.put(URL_API, data);
+  return res.data;
+};
+
+export const updateParentMeService = async (
+  data: UpdateParentRequest
+): Promise<ApiResponse<ParentResponse>> => {
+  const URL_API = "/parents/me";
   const res = await axios.put(URL_API, data);
   return res.data;
 };

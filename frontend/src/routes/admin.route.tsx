@@ -60,6 +60,7 @@ import StatisticsPage from "../components/admin/statistics/StatisticsPage";
 
 // Admission Students component
 import AdmissionStudentsPage from "../components/admin/admissions/AdmissionStudentsPage";
+import AdminProfile from "../pages/admin/Profile";
 
 
 const AdminRoutes: RouteObject = {
@@ -227,6 +228,10 @@ const AdminRoutes: RouteObject = {
     {
       path: "admissions/students",
       element: <AdmissionStudentsPage />,
+    },
+    {
+      path: "profile",
+      element: <AdminProfile />,
     },
   ],
 };

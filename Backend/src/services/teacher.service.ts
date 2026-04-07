@@ -174,6 +174,56 @@ export const getTeacherByIdService = async (
   }
 };
 
+// Lấy giáo viên hiện tại theo userId (JWT)
+export const getTeacherByUserIdService = async (
+  userId: number,
+): Promise<TeacherResponse> => {
+  try {
+    const teacher = await prisma.teacherInfo.findFirst({
+      where: {
+        userId,
+        deletedAt: null,
+        user: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        user: true,
+        freeDays: true,
+      },
+    });
+
+    if (!teacher) {
+      throw new AppError("Không tìm thấy giáo viên", 404);
+    }
+
+    return toTeacherResponse(teacher);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      "Lỗi khi lấy thông tin giáo viên: " + (error as Error).message,
+      500,
+    );
+  }
+};
+
+// Cập nhật giáo viên hiện tại theo userId (JWT)
+export const updateTeacherByUserIdService = async (
+  userId: number,
+  data: UpdateTeacherRequest,
+): Promise<TeacherResponse> => {
+  const teacher = await prisma.teacherInfo.findFirst({
+    where: { userId, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (!teacher) {
+    throw new AppError("Không tìm thấy giáo viên", 404);
+  }
+
+  return updateTeacherService(teacher.id, data);
+};
+
 // Cập nhật giáo viên
 export const updateTeacherService = async (
   id: number,
@@ -236,15 +286,20 @@ export const updateTeacherService = async (
   }
 
   try {
+    const hashedPassword = data.password
+      ? await bcrypt.hash(data.password, 10)
+      : undefined;
+
     const result = await prisma.$transaction(async (tx) => {
       // Cập nhật user info nếu có
-      if (data.fullname || data.email || data.phone) {
+      if (data.fullname || data.email || data.phone || hashedPassword) {
         await tx.user.update({
           where: { id: teacher.userId },
           data: {
             ...(data.fullname && { fullname: data.fullname }),
             ...(data.email && { email: data.email }),
             ...(data.phone && { phone: data.phone }),
+            ...(hashedPassword && { password: hashedPassword }),
           },
         });
       }

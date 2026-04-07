@@ -211,12 +211,17 @@ export const updateParentService = async (
   }
 
   try {
+    const hashedPassword = data.password
+      ? await bcrypt.hash(data.password, 10)
+      : undefined;
+
     // Cập nhật user info
     await prisma.user.update({
       where: { id: parent.userId },
       data: {
         ...(data.fullname && { fullname: data.fullname }),
         ...(data.email && { email: data.email }),
+        ...(hashedPassword && { password: hashedPassword }),
         ...(data.phone && { phone: data.phone }),
       },
     });
@@ -245,6 +250,65 @@ export const updateParentService = async (
       500,
     );
   }
+};
+
+// Lấy phụ huynh hiện tại theo userId (JWT)
+export const getParentByUserIdService = async (
+  userId: number,
+): Promise<ParentResponse> => {
+  try {
+    const parent = await prisma.parentInfo.findFirst({
+      where: {
+        userId,
+        deletedAt: null,
+        user: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        user: true,
+        students: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!parent) {
+      throw new AppError("Không tìm thấy phụ huynh", 404);
+    }
+
+    return toParentResponse(parent);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      "Lỗi khi lấy thông tin phụ huynh: " + (error as Error).message,
+      500,
+    );
+  }
+};
+
+// Cập nhật phụ huynh hiện tại theo userId (JWT)
+export const updateParentByUserIdService = async (
+  userId: number,
+  data: UpdateParentRequest,
+): Promise<ParentResponse> => {
+  // Resolve parentInfo.id first, then reuse existing update logic (incl. checks)
+  const parent = await prisma.parentInfo.findFirst({
+    where: { userId, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (!parent) {
+    throw new AppError("Không tìm thấy phụ huynh", 404);
+  }
+
+  return updateParentService(parent.id, data);
 };
 
 // Soft delete phụ huynh

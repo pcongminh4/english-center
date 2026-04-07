@@ -5,6 +5,8 @@ import {
   getAllParentsService,
   getParentByIdService,
   updateParentService,
+  getParentByUserIdService,
+  updateParentByUserIdService,
   deleteParentService,
   linkStudentToParentService,
   unlinkStudentFromParentService,
@@ -50,6 +52,20 @@ export const updateParent = async (req: Request, res: Response) => {
   const customRes = res as CustomResponse;
   const id = Number(req.params.id);
   const result = await updateParentService(id, req.body);
+  return customRes.success(result, "Cập nhật phụ huynh thành công");
+};
+
+// Lấy phụ huynh hiện tại (từ JWT)
+export const getParentMe = async (req: Request, res: Response) => {
+  const customRes = res as CustomResponse;
+  const result = await getParentByUserIdService(req.user.id);
+  return customRes.success(result, "Lấy thông tin phụ huynh thành công");
+};
+
+// Cập nhật phụ huynh hiện tại (từ JWT)
+export const updateParentMe = async (req: Request, res: Response) => {
+  const customRes = res as CustomResponse;
+  const result = await updateParentByUserIdService(req.user.id, req.body);
   return customRes.success(result, "Cập nhật phụ huynh thành công");
 };
 
