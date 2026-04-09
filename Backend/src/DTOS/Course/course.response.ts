@@ -6,7 +6,7 @@ export interface CourseResponse {
   status: string;
   price: number;
   sale: number;
-  thumbnail: string;
+  thumbnail: string | null;
   totalSession: number;
   minBand: number | null;
   maxBand: number | null;

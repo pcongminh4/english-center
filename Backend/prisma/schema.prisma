@@ -766,10 +766,10 @@ model SpeakingFiveToSeven {
   id             Int      @id @default(autoincrement())
   index          Int      @default(3)
   speakingExamId Int
-  passage        String
-  questionFive   String @db.Text
-  questionSix    String @db.Text
-  questionSeven  String @db.Text
+  passage        String   @db.Text
+  questionFive   String   @db.Text
+  questionSix    String   @db.Text
+  questionSeven  String   @db.Text
   createdAt      DateTime @default(now())
 
   speakingExam EntranceExamSpeaking @relation(fields: [speakingExamId], references: [id], onDelete: Cascade)
@@ -783,10 +783,10 @@ model SpeakingEightToTen {
   id             Int      @id @default(autoincrement())
   index          Int      @default(4)
   speakingExamId Int
-  passage        String
-  questionEight  String @db.Text
-  questionNine   String @db.Text
-  questionTen    String @db.Text
+  passage        String   @db.Text
+  questionEight  String   @db.Text
+  questionNine   String   @db.Text
+  questionTen    String   @db.Text
   image          String?
   createdAt      DateTime @default(now())
 

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { ScheduleResponse } from "../../DTOS/Schedule/schedule.response";
 import { toTeacherResponse } from "./teacher.mapper";
+import { buildCourseThumbnailUrl } from "../fileUrl";
 
 export type ScheduleWithCourse = Prisma.ScheduleGetPayload<{
   include: { 
@@ -31,6 +32,7 @@ export const toScheduleResponse = (
   course: {
     ...schedule.course,
     price: Number(schedule.course.price), // convert Decimal -> number
+    thumbnail: buildCourseThumbnailUrl(schedule.course.thumbnail),
   },
   sessions: schedule.sessions.map((s) => ({
     id: s.id,

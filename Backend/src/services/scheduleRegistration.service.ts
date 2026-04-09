@@ -7,6 +7,7 @@ import { StudentResponse } from "../DTOS/Student/student.response";
 import { toStudentResponse } from "../utils/Mapper/student.mapper";
 import { toScheduleResponse } from "../utils/Mapper/schedule.mapper";
 import { AppError } from "../middleware/errorHandler";
+import { buildCourseThumbnailUrl } from "../utils/fileUrl";
 
 const toMinutes = (time: string): number => {
   const [hour, minute] = time.split(":").map(Number);
@@ -241,11 +242,11 @@ export const getScheduleStudentsService = async (
   };
 };
 
-// Student: Lấy schedule đã đăng ký theo courseId
+// Student: Lấy tất cả schedules đã đăng ký theo courseId
 export const getStudentScheduleByCourseIdService = async (
   studentId: number,
   courseId: number,
-): Promise<any | null> => {
+): Promise<any[]> => {
   const where: any = {
     studentId,
     student: { deletedAt: null },
@@ -254,7 +255,7 @@ export const getStudentScheduleByCourseIdService = async (
     },
   };
 
-  const registration = await prisma.scheduleRegistration.findFirst({
+  const registrations = await prisma.scheduleRegistration.findMany({
     where,
     include: {
       schedule: {
@@ -269,11 +270,7 @@ export const getStudentScheduleByCourseIdService = async (
     orderBy: { createdAt: "desc" },
   });
 
-  if (!registration) {
-    return null;
-  }
-
-  return {
+  return registrations.map((registration) => ({
     id: registration.schedule.id,
     teacher: {
       id: registration.schedule.teacher.id,
@@ -288,6 +285,7 @@ export const getStudentScheduleByCourseIdService = async (
       name: registration.schedule.course.name,
       type: registration.schedule.course.type,
       skill: registration.schedule.course.courseSkill,
+      thumbnail: buildCourseThumbnailUrl(registration.schedule.course.thumbnail),
     },
     totalSlot: registration.schedule.totalSlot,
     totalRegister: registration.schedule.totalRegister,
@@ -301,7 +299,7 @@ export const getStudentScheduleByCourseIdService = async (
       startTime: session.startTime,
       endTime: session.endTime,
     })),
-  };
+  }));
 };
 
 // Student: Lấy danh sách schedules mà student đã đăng ký
@@ -333,46 +331,36 @@ export const getStudentSchedulesService = async (
     skip: (page - 1) * limit,
   });
 
-  const data = registrations
-    .map((r) => ({
-      id: r.schedule.id,
-      teacher: {
-        id: r.schedule.teacher.id,
-        fullname: r.schedule.teacher.user.fullname,
-      },
-      classroom: {
-        id: r.schedule.classroom.id,
-        name: r.schedule.classroom.name,
-      },
-      course: {
-        id: r.schedule.course.id,
-        name: r.schedule.course.name,
-        type: r.schedule.course.type,
-        skill: r.schedule.course.courseSkill,
-      },
-      totalSlot: r.schedule.totalSlot,
-      totalRegister: r.schedule.totalRegister,
-      startTime: r.schedule.startTime,
-      endTime: r.schedule.endTime,
-      createdAt: r.schedule.createdAt,
-      updatedAt: r.schedule.updatedAt,
-      sessions: r.schedule.sessions.map(session => ({
-        id: session.id,
-        day: session.day,
-        startTime: session.startTime,
-        endTime: session.endTime,
-      })),
-    }))
-    // Filter to show only courses that have started
-    .filter((schedule) => {
-      const now = new Date();
-      const startTime = new Date(schedule.startTime);
-      return startTime <= now;
-    })
-    // Deduplicate by course - chỉ giữ schedule đầu tiên của mỗi course
-    .filter((schedule, index, self) => 
-      index === self.findIndex((s) => s.course.id === schedule.course.id)
-    );
+  const data = registrations.map((r) => ({
+    id: r.schedule.id,
+    teacher: {
+      id: r.schedule.teacher.id,
+      fullname: r.schedule.teacher.user.fullname,
+    },
+    classroom: {
+      id: r.schedule.classroom.id,
+      name: r.schedule.classroom.name,
+    },
+    course: {
+      id: r.schedule.course.id,
+      name: r.schedule.course.name,
+      type: r.schedule.course.type,
+      skill: r.schedule.course.courseSkill,
+      thumbnail: buildCourseThumbnailUrl(r.schedule.course.thumbnail),
+    },
+    totalSlot: r.schedule.totalSlot,
+    totalRegister: r.schedule.totalRegister,
+    startTime: r.schedule.startTime,
+    endTime: r.schedule.endTime,
+    createdAt: r.schedule.createdAt,
+    updatedAt: r.schedule.updatedAt,
+    sessions: r.schedule.sessions.map(session => ({
+      id: session.id,
+      day: session.day,
+      startTime: session.startTime,
+      endTime: session.endTime,
+    })),
+  }));
 
   return {
     data,

@@ -24,11 +24,7 @@ const CourseInfo = ({ course, onDataChange }: Props) => {
   });
 
   const updateForm = (key: string, value: any) => {
-    setForm((prev: any) => {
-      const newForm = { ...prev, [key]: value };
-      onDataChange(newForm);
-      return newForm;
-    });
+    setForm((prev: any) => ({ ...prev, [key]: value }));
   };
 
 
@@ -48,16 +44,17 @@ const CourseInfo = ({ course, onDataChange }: Props) => {
 
   useEffect(() => {
     // Khi đổi loại kỹ năng → reset giờ học
-    setForm((prev: any) => {
-      const newForm = {
-        ...prev,
-        fromTime: "",
-        toTime: "",
-      };
-      onDataChange(newForm);
-      return newForm;
-    });
+    setForm((prev: any) => ({
+      ...prev,
+      fromTime: "",
+      toTime: "",
+    }));
   }, [course?.courseSkill]);
+
+  // Notify parent whenever form changes
+  useEffect(() => {
+    onDataChange(form);
+  }, [form]);
 
   return (
     <section className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100">
@@ -105,13 +102,10 @@ const CourseInfo = ({ course, onDataChange }: Props) => {
                     adjustedDate = adjustStartDateByDays(newDate, prev.days);
                   }
 
-                  const newForm = {
+                  return {
                     ...prev,
                     startDate: adjustedDate,
                   };
-
-                  onDataChange(newForm);
-                  return newForm;
                 });
               }}
 
@@ -179,14 +173,11 @@ const CourseInfo = ({ course, onDataChange }: Props) => {
                       adjustedDate = adjustStartDateByDays(prev.startDate, newDays);
                     }
 
-                    const newForm = {
+                    return {
                       ...prev,
                       days: newDays,
                       startDate: adjustedDate,
                     };
-
-                    onDataChange(newForm);
-                    return newForm;
                   });
                 }}
 

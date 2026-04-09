@@ -18,7 +18,7 @@ export const createSchedule = async (
     data
   );
   return response.data;
-};
+};  
 
 // Lấy 3 course có thời gian bắt đầu gần hiện tại nhất
 export const getUpcomingSchedules = async (): Promise<ApiResponse<ScheduleResponse[]>> => {
@@ -159,11 +159,11 @@ export const removeStudentFromSchedule = async (
   return response.data;
 };
 
-// Student: Lấy schedule đã đăng ký theo courseId
+// Student: Lấy tất cả schedules đã đăng ký theo courseId
 export const getStudentScheduleByCourseId = async (
   courseId: number,
-): Promise<ApiResponse<StudentScheduleByIdResponse | null>> => {
-  const response = await axios.get<ApiResponse<StudentScheduleByIdResponse | null>>(
+): Promise<ApiResponse<StudentScheduleByIdResponse[]>> => {
+  const response = await axios.get<ApiResponse<StudentScheduleByIdResponse[]>>(
     `/schedules/student/course/${courseId}`,
   );
   return response.data;

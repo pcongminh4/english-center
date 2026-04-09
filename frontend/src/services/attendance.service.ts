@@ -224,6 +224,37 @@ export const getStudentAttendanceRecords = async (): Promise<StudentAttendanceRe
   return response.data.data;
 };
 
+// Get student's attendance records by courseId
+export interface CourseAttendanceRecord {
+  id: number;
+  date: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  scheduleId: number;
+  checkedIn: boolean;
+  checkInTime: string | null;
+  checkInCreatedAt: string | null;
+}
+
+export const getStudentAttendanceByCourseId = async (
+  courseId: number
+): Promise<CourseAttendanceRecord[]> => {
+  const token = localStorage.getItem('token');
+  const response = await axiosInstance.get<ApiResponse<CourseAttendanceRecord[]>>(
+    `/attendance/student/course/${courseId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.data.data) {
+    throw new Error('No data received from server');
+  }
+  return response.data.data;
+};
+
 // Get a student's attendance records for parent account
 export const getStudentAttendanceForParent = async (
   studentId: number

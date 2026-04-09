@@ -11,6 +11,7 @@ import {
   cancelAttendanceService,
   getStudentAttendanceRecordsService,
   getStudentAttendanceRecordsForParentService,
+  getStudentAttendanceByCourseIdService,
 } from "../services/attendance.service";
 import { GenerateQRInput, ScanQRInput, GetAttendanceHistoryInput, ManualCheckInInput } from "../validators/attendance.validator";
 import { AppError } from "../middleware/errorHandler";
@@ -249,6 +250,25 @@ export const getStudentAttendanceForParent = async (req: Request, res: Response)
   }
 
   const result = await getStudentAttendanceRecordsForParentService(parentUserId, studentId);
+
+  return customRes.success(result.data, "Lấy lịch sử điểm danh thành công");
+};
+
+// Get student's attendance records by courseId (Student only)
+export const getStudentAttendanceByCourseId = async (req: StudentRequest, res: Response) => {
+  const customRes = res as CustomResponse;
+  const studentId = req.student?.id;
+  const courseId = Number(req.params.courseId);
+
+  if (!studentId) {
+    return customRes.error("Không tìm thấy thông tin học sinh", 404);
+  }
+
+  if (isNaN(courseId)) {
+    return customRes.error("Course ID không hợp lệ", 400);
+  }
+
+  const result = await getStudentAttendanceByCourseIdService(studentId, courseId);
 
   return customRes.success(result.data, "Lấy lịch sử điểm danh thành công");
 };

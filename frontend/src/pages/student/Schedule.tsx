@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { CalendarDays, GraduationCap, MapPin } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store';
-import { getActiveSchedules } from '../../services/schedule.service';
+import { getStudentSchedules } from '../../services/schedule.service';
 import formatDate from '../../helpers/formatDate';
 import type { ScheduleResponse } from '../../types/schedule/schedule.response';
 
@@ -43,7 +43,7 @@ export const Schedule = () => {
         setError(null);
 
         // Fetch all active and planned schedules (exclude finished ones)
-        const res = await getActiveSchedules(1, 100);
+        const res = await getStudentSchedules(1, 100);
         if (res.success && res.data) {
           setSchedules(res.data.data);
         }

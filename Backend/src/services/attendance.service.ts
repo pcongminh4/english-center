@@ -16,8 +16,15 @@ function setVietnamTime(date: Date, timeString: string): Date {
   
   // Set time using UTC methods to avoid timezone issues
   // Vietnam is UTC+7, so if Vietnam time is 16:00, UTC time is 09:00
-  const utcHours = (hours - 7 + 24) % 24; // Handle negative/overflow
-  result.setUTCHours(utcHours, minutes, 0, 0);
+  // When hours < 7 (e.g., 01:10 VN), UTC is previous day (18:10)
+  const offset = hours - 7;
+  if (offset < 0) {
+    // VN time is before 7:00 AM → UTC is previous day
+    result.setUTCDate(result.getUTCDate() - 1);
+    result.setUTCHours(offset + 24, minutes, 0, 0);
+  } else {
+    result.setUTCHours(offset, minutes, 0, 0);
+  }
   
   return result;
 }
@@ -77,19 +84,6 @@ function isSessionExpired(sessionDate: Date, endTime: string): boolean {
   // Calculate session end time using Vietnam timezone
   const sessionEndTime = setVietnamTime(sessionDate, endTime);
   
-  // Debug logging
-  console.log('[DEBUG isSessionExpired]', {
-    now: now.toISOString(),
-    nowUTC: now.toUTCString(),
-    sessionDate: sessionDate.toISOString(),
-    endTime: endTime,
-    sessionEndTime: sessionEndTime.toISOString(),
-    sessionEndTimeUTC: sessionEndTime.toUTCString(),
-    nowTimestamp: now.getTime(),
-    sessionEndTimeTimestamp: sessionEndTime.getTime(),
-    isExpired: now.getTime() > sessionEndTime.getTime()
-  });
-  
   // Check if current time is past the session end time
   return now.getTime() > sessionEndTime.getTime();
 }
@@ -125,7 +119,8 @@ export const generateQRCodeService = async (
   let sessionDate: Date;
   if (actualDate) {
     sessionDate = new Date(actualDate);
-    sessionDate.setHours(0, 0, 0, 0);
+    // Use setUTCHours to avoid timezone offset issues when normalizing date
+    sessionDate.setUTCHours(0, 0, 0, 0);
   } else {
     sessionDate = calculateSessionDate(
       session.schedule.startTime,
@@ -133,11 +128,16 @@ export const generateQRCodeService = async (
     );
   }
   
+  // Check if current time is within session hours
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  sessionDate.setHours(0, 0, 0, 0);
-  
-  if (sessionDate < now) {
+  const sessionStartTime = setVietnamTime(sessionDate, session.startTime);
+  const sessionEndTime = setVietnamTime(sessionDate, session.endTime);
+
+  if (now.getTime() < sessionStartTime.getTime()) {
+    throw new AppError("Buổi học chưa bắt đầu, không thể tạo QR", 400);
+  }
+
+  if (now.getTime() > sessionEndTime.getTime()) {
     throw new AppError("Buổi học đã kết thúc, không thể tạo QR", 400);
   }
 
@@ -163,12 +163,14 @@ export const generateQRCodeService = async (
   const qrCode = generateQRString(sessionId);
 
   // Create or update attendance record with actual date
+  // Update createdAt to reset QR expiry timer when regenerating
   const attendance = await prisma.scheduleAttendance.upsert({
     where: {
       id: existingAttendance?.id || 0,
     },
     update: {
       qrCode,
+      createdAt: new Date(),
     },
     create: {
       scheduleDayId: sessionId,
@@ -192,18 +194,10 @@ export const scanQRCodeService = async (
   qrCode: string,
   studentId: number
 ): Promise<{ success: boolean; message: string; time?: string }> => {
-  console.log('[QR CODE] Scan QR service called:', {
-    studentId,
-    qrCodeLength: qrCode?.length,
-    qrCodePreview: qrCode?.substring(0, 30) + '...',
-    timestamp: new Date().toISOString()
-  });
-
   // Parse QR code
   const parsedQR = parseQRString(qrCode);
 
   if (!parsedQR) {
-    console.log('[QR CODE] ERROR: Invalid QR code format');
     return {
       success: false,
       message: "Mã QR không hợp lệ",
@@ -213,22 +207,12 @@ export const scanQRCodeService = async (
   const { sessionId, timestamp } = parsedQR;
 
   // Check if QR is expired
-  const timeSinceCreation = Date.now() - timestamp;
   const isExpired = isQRExpired(timestamp);
-  
-  console.log('[QR CODE] Parse result:', {
-    sessionId,
-    qrTimestamp: timestamp,
-    qrTimestampDate: new Date(timestamp).toISOString(),
-    timeSinceCreation: `${Math.floor(timeSinceCreation / 60000)}m ${Math.floor((timeSinceCreation % 60000) / 1000)}s`,
-    isExpired
-  });
 
   if (isExpired) {
-    console.log('[QR CODE] ERROR: QR code expired');
     return {
       success: false,
-      message: "Mã QR đã hết hạn (quá 30 phút)",
+      message: "Mã QR đã hết hạn (quá 5 phút)",
     };
   }
 
@@ -252,57 +236,45 @@ export const scanQRCodeService = async (
   });
 
   if (!attendance) {
-    console.log('[QR CODE] ERROR: Attendance record not found for scheduleSessionId:', sessionId);
-    console.log('[QR CODE] Looking for scheduleAttendance with scheduleDayId:', sessionId);
     return {
       success: false,
       message: "Không tìm thấy buổi điểm danh",
     };
   }
 
-  console.log('[QR CODE] Session found:', {
-    attendanceId: attendance.id,
-    scheduleDayId: attendance.scheduleDayId,
-    scheduleId: attendance.scheduleSession.scheduleId,
-    day: attendance.scheduleSession.day,
-    startTime: attendance.scheduleSession.startTime,
-    endTime: attendance.scheduleSession.endTime,
-    date: attendance.date
-  });
-
   // Check if student is registered for this schedule
   const isRegistered = attendance.scheduleSession.schedule.registrations.some(
     (reg) => reg.studentId === studentId
   );
 
-  console.log('[QR CODE] Student registration check:', {
-    studentId,
-    totalRegistrations: attendance.scheduleSession.schedule.registrations.length,
-    isRegistered,
-    registeredStudentIds: attendance.scheduleSession.schedule.registrations.map(r => r.studentId)
-  });
-
   if (!isRegistered) {
-    console.log('[QR CODE] ERROR: Student not registered');
     return {
       success: false,
       message: "Bạn chưa đăng ký vào khóa học này",
     };
   }
 
-  // Check if session has expired (current time > session end time)
+  // Check if current time is within session hours
   const sessionDate = new Date(attendance.date);
-  const sessionEndTime = attendance.scheduleSession.endTime;
-  
-  console.log('[QR CODE] Checking session expiry...');
-  if (isSessionExpired(sessionDate, sessionEndTime)) {
-    console.log('[QR CODE] ERROR: Session has expired');
+  // Use setUTCHours to avoid timezone offset issues when normalizing date
+  sessionDate.setUTCHours(0, 0, 0, 0);
+  const sessionStartTime = setVietnamTime(sessionDate, attendance.scheduleSession.startTime);
+  const sessionEndTime = setVietnamTime(sessionDate, attendance.scheduleSession.endTime);
+  const nowForCheck = new Date();
+
+  if (nowForCheck.getTime() < sessionStartTime.getTime()) {
+    return {
+      success: false,
+      message: "Buổi học chưa bắt đầu, không thể điểm danh",
+    };
+  }
+
+  if (nowForCheck.getTime() > sessionEndTime.getTime()) {
     return {
       success: false,
       message: "Buổi học đã kết thúc, không thể điểm danh",
     };
   }
-  console.log('[QR CODE] Session is still active');
 
   // Idempotency check: already scanned?
   const existingRecord = await prisma.attendanceRecord.findFirst({
@@ -313,10 +285,6 @@ export const scanQRCodeService = async (
   });
 
   if (existingRecord) {
-    console.log('[QR CODE] Student already checked in:', {
-      recordId: existingRecord.id,
-      checkInTime: existingRecord.time
-    });
     return {
       success: false,
       message: "Bạn đã điểm danh rồi",
@@ -324,7 +292,6 @@ export const scanQRCodeService = async (
     };
   }
 
-  console.log('[QR CODE] Creating attendance record...');
   // Create attendance record
   const now = new Date();
   const time = now.toLocaleTimeString("vi-VN", {
@@ -338,13 +305,6 @@ export const scanQRCodeService = async (
       studentId,
       time,
     },
-  });
-
-  console.log('[QR CODE] Attendance record created:', {
-    recordId: newRecord.id,
-    scheduleAttendanceId: attendance.id,
-    studentId,
-    time
   });
 
   // Update total absent count (decrement), but never go below 0
@@ -364,12 +324,6 @@ export const scanQRCodeService = async (
     },
   });
 
-  console.log('[QR CODE] Attendance count updated:', {
-    previousAbsent: currentAttendance?.totalAbsent,
-    newAbsent: newTotalAbsent
-  });
-
-  console.log('[QR CODE] Check-in SUCCESSFUL');
   return {
     success: true,
     message: "Điểm danh thành công!",
@@ -428,7 +382,7 @@ export const getAttendanceHistoryService = async (
  * @param days - Array of days to include (e.g., ["WEDNESDAY", "FRIDAY", "SUNDAY"])
  * @returns Array of dates matching the schedule days
  */
-function generateRecurringSessions(
+export function generateRecurringSessions(
   startTime: Date,
   endTime: Date,
   days: string[]
@@ -472,6 +426,7 @@ function generateRecurringSessions(
 /**
  * Get all sessions with attendance data for a schedule
  * Only teacher can view
+ * Reads from database (ScheduleAttendance records) instead of generating virtual dates
  */
 export const getScheduleSessionsAttendanceService = async (
   scheduleId: number,
@@ -493,133 +448,89 @@ export const getScheduleSessionsAttendanceService = async (
     throw new AppError("Bạn không có quyền xem thông tin này", 403);
   }
 
-  // Get session patterns (the 3 base sessions: WEDNESDAY, FRIDAY, SUNDAY)
-  const sessionPatterns = await prisma.scheduleSession.findMany({
+  // Get total registered students
+  const totalRegistered = await prisma.scheduleRegistration.count({
     where: { scheduleId },
+  });
+
+  // Get all ScheduleAttendance records for this schedule from database
+  const attendanceRecords = await prisma.scheduleAttendance.findMany({
+    where: {
+      scheduleSession: {
+        scheduleId,
+      },
+    },
     include: {
-      attendances: {
+      scheduleSession: {
+        select: {
+          id: true,
+          day: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+      records: {
         include: {
-          records: {
+          student: {
             include: {
-              student: {
-                include: {
-                  user: true,
-                },
-              },
+              user: true,
             },
           },
         },
       },
     },
     orderBy: {
-      createdAt: 'asc',
+      date: 'asc',
     },
   });
 
-  // Get total registered students
-  const totalRegistered = await prisma.scheduleRegistration.count({
-    where: { scheduleId },
-  });
-
-  // Get today's date (set to 00:00:00 to avoid timezone issues)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Generate all recurring session dates
-  const recurringDates = generateRecurringSessions(
-    schedule.startTime,
-    schedule.endTime,
-    sessionPatterns.map(p => p.day)
-  );
-
-  // Create a map of dates to attendances for quick lookup
-  const attendanceMap = new Map<number, any>();
-  sessionPatterns.forEach(pattern => {
-    if (pattern.attendances && pattern.attendances.length > 0) {
-      pattern.attendances.forEach(att => {
-        const attDate = new Date(att.date);
-        attDate.setHours(0, 0, 0, 0);
-        attendanceMap.set(attDate.getTime(), att);
-      });
-    }
-  });
-
-  // Format all recurring sessions with attendance statistics
-  const formattedSessions: any[] = [];
   const now = new Date();
 
-  recurringDates.forEach((sessionDate) => {
-    const dateKey = sessionDate.getTime();
-    const dayOfWeek = sessionDate.getDay();
+  // Format attendance records with status
+  const formattedSessions = attendanceRecords.map((attendance) => {
+    const sessionDate = new Date(attendance.date);
+    // Use setUTCHours to avoid timezone offset issues when normalizing date
+    sessionDate.setUTCHours(0, 0, 0, 0);
 
-    // Find the session pattern for this day
-    const dayMap: { [key: number]: string } = {
-      1: "MONDAY",
-      2: "TUESDAY",
-      3: "WEDNESDAY",
-      4: "THURSDAY",
-      5: "FRIDAY",
-      6: "SATURDAY",
-      0: "SUNDAY",
-    };
-
-    const dayName = dayMap[dayOfWeek];
-    const pattern = sessionPatterns.find(p => p.day === dayName);
-
-    if (!pattern) return; // Skip if no pattern found
-
-    const attendance = attendanceMap.get(dateKey);
-    const attendedCount = attendance ? attendance.records.length : 0;
-    const absentCount = attendance ? attendance.totalAbsent : totalRegistered;
+    const session = attendance.scheduleSession;
+    const attendedCount = attendance.records.length;
+    const absentCount = totalRegistered - attendedCount;
 
     // Calculate session start and end times using Vietnam timezone
-    const sessionStartTime = setVietnamTime(sessionDate, pattern.startTime);
-    const sessionEndTime = setVietnamTime(sessionDate, pattern.endTime);
+    const sessionStartTime = setVietnamTime(sessionDate, session.startTime);
+    const sessionEndTime = setVietnamTime(sessionDate, session.endTime);
 
     // Determine session status based on actual time
     let status: "ACTIVE" | "FINISHED" | "PLANNED";
     if (now.getTime() > sessionEndTime.getTime()) {
-      status = "FINISHED"; // Past end time - Session is finished
+      status = "FINISHED";
     } else if (now.getTime() >= sessionStartTime.getTime()) {
-      status = "ACTIVE"; // Within session time - Session is active
+      status = "ACTIVE";
     } else {
-      status = "PLANNED"; // Before start time - Session is planned
+      status = "PLANNED";
     }
 
-    formattedSessions.push({
-      id: pattern.id, // Use pattern ID
-      day: dayName,
-      startTime: pattern.startTime,
-      endTime: pattern.endTime,
+    return {
+      id: session.id,
+      attendanceId: attendance.id,
+      day: session.day,
+      startTime: session.startTime,
+      endTime: session.endTime,
       actualDate: sessionDate.toISOString(),
       status,
-      qrCode: attendance?.qrCode || null,
-      qrCreatedAt: attendance?.createdAt || null,
+      qrCode: attendance.qrCode || null,
+      qrCreatedAt: attendance.createdAt || null,
       attendedCount,
       absentCount,
       totalRegistered,
-      hasAttendance: !!attendance,
-    });
-  });
-
-  // Sort sessions by actual date (chronological order) - should already be sorted
-  formattedSessions.sort((a, b) => {
-    const dateA = new Date(a.actualDate);
-    const dateB = new Date(b.actualDate);
-    return dateA.getTime() - dateB.getTime();
-  });
-
-  // Filter to only show past sessions and today's session
-  const filteredSessions = formattedSessions.filter(session => {
-    const sessionDate = new Date(session.actualDate);
-    sessionDate.setHours(0, 0, 0, 0);
-    return sessionDate.getTime() <= today.getTime();
+      hasAttendance: true,
+    };
   });
 
   return {
     scheduleId,
     totalRegistered,
-    sessions: filteredSessions,
+    sessions: formattedSessions,
   };
 };
 
@@ -659,7 +570,8 @@ export const manualCheckInService = async (
   let sessionDate: Date;
   if (actualDate) {
     sessionDate = new Date(actualDate);
-    sessionDate.setHours(0, 0, 0, 0);
+    // Use setUTCHours to avoid timezone offset issues when normalizing date
+    sessionDate.setUTCHours(0, 0, 0, 0);
   } else {
     sessionDate = calculateSessionDate(
       session.schedule.startTime,
@@ -667,23 +579,20 @@ export const manualCheckInService = async (
     );
   }
   
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  sessionDate.setHours(0, 0, 0, 0);
-  
-  if (sessionDate < now) {
+  // Check if current time is within session hours
+  const nowForTimeCheck = new Date();
+  const sessionStartTime = setVietnamTime(sessionDate, session.startTime);
+  const sessionEndTime = setVietnamTime(sessionDate, session.endTime);
+
+  if (nowForTimeCheck.getTime() < sessionStartTime.getTime()) {
+    throw new AppError("Buổi học chưa bắt đầu, không thể điểm danh", 400);
+  }
+
+  if (nowForTimeCheck.getTime() > sessionEndTime.getTime()) {
     throw new AppError("Buổi học đã kết thúc, không thể điểm danh", 400);
   }
 
   // Check if student is registered for this schedule
-  console.log(`[DEBUG] Checking registration:`, {
-    sessionId,
-    studentId,
-    studentIdType: typeof studentId,
-    registrationsCount: session.schedule.registrations.length,
-    registrations: session.schedule.registrations.map(r => ({ studentId: r.studentId, studentIdType: typeof r.studentId, scheduleId: r.scheduleId }))
-  });
-  
   // Convert studentId to number if it's a string
   const numericStudentId = typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
   
@@ -691,16 +600,8 @@ export const manualCheckInService = async (
     (reg) => reg.studentId === numericStudentId
   );
 
-  console.log(`[DEBUG] Student registered:`, isRegistered);
-
   if (!isRegistered) {
-    console.log(`[DEBUG] Throwing error: Student ${numericStudentId} not registered for schedule ${session.schedule.id}`);
     throw new AppError("Học sinh chưa đăng ký vào khóa học này", 400);
-  }
-
-  // Check if session has expired (current time > session end time)
-  if (isSessionExpired(sessionDate, session.endTime)) {
-    throw new AppError("Buổi học đã kết thúc, không thể điểm danh", 400);
   }
 
   // Check if attendance record exists for this session date
@@ -814,7 +715,8 @@ export const cancelAttendanceService = async (
   let sessionDate: Date;
   if (actualDate) {
     sessionDate = new Date(actualDate);
-    sessionDate.setHours(0, 0, 0, 0);
+    // Use setUTCHours to avoid timezone offset issues when normalizing date
+    sessionDate.setUTCHours(0, 0, 0, 0);
   } else {
     sessionDate = calculateSessionDate(
       session.schedule.startTime,
@@ -893,8 +795,6 @@ export const cancelAttendanceService = async (
  * @param studentId - Student ID to fetch attendance for
  */
 export const getStudentAttendanceRecordsService = async (studentId: number) => {
-  console.log('[STUDENT ATTENDANCE] Fetching records for student:', studentId);
-  
   const records = await prisma.attendanceRecord.findMany({
     where: { studentId },
     include: {
@@ -909,20 +809,112 @@ export const getStudentAttendanceRecordsService = async (studentId: number) => {
     },
   });
 
-  console.log('[STUDENT ATTENDANCE] Found records:', records.length);
-  records.forEach(record => {
-    console.log('[STUDENT ATTENDANCE] Record:', {
-      id: record.id,
-      scheduleSessionId: record.scheduleAttendance?.scheduleDayId,
-      time: record.time,
-      date: record.scheduleAttendance?.date
-    });
-  });
-
   return {
     success: true,
     data: records,
   };
+};
+
+/**
+ * Get student's attendance records filtered by courseId
+ */
+export const getStudentAttendanceByCourseIdService = async (
+  studentId: number,
+  courseId: number
+) => {
+  // Get all schedule registrations for this student that belong to schedules of this course
+  const registrations = await prisma.scheduleRegistration.findMany({
+    where: {
+      studentId,
+      schedule: {
+        coursesId: courseId,
+      },
+    },
+    select: { scheduleId: true },
+  });
+
+  const scheduleIds = registrations.map(r => r.scheduleId);
+
+  if (scheduleIds.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  // Get all schedule sessions for these schedules
+  const sessions = await prisma.scheduleSession.findMany({
+    where: {
+      scheduleId: { in: scheduleIds },
+    },
+    select: { id: true, day: true, startTime: true, endTime: true, scheduleId: true },
+  });
+
+  const sessionIds = sessions.map(s => s.id);
+
+  // Get all attendance records for this student in these sessions
+  const records = await prisma.attendanceRecord.findMany({
+    where: {
+      studentId,
+      scheduleAttendance: {
+        scheduleDayId: { in: sessionIds },
+      },
+    },
+    include: {
+      scheduleAttendance: {
+        include: {
+          scheduleSession: {
+            select: {
+              id: true,
+              day: true,
+              startTime: true,
+              endTime: true,
+              scheduleId: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  // Also get all schedule attendances (including ones student was absent)
+  const allAttendances = await prisma.scheduleAttendance.findMany({
+    where: {
+      scheduleDayId: { in: sessionIds },
+    },
+    include: {
+      scheduleSession: {
+        select: {
+          id: true,
+          day: true,
+          startTime: true,
+          endTime: true,
+          scheduleId: true,
+        },
+      },
+      records: {
+        where: { studentId },
+        select: { id: true, time: true, createdAt: true },
+      },
+    },
+    orderBy: {
+      date: 'desc',
+    },
+  });
+
+  const data = allAttendances.map(att => ({
+    id: att.id,
+    date: att.date,
+    day: att.scheduleSession.day,
+    startTime: att.scheduleSession.startTime,
+    endTime: att.scheduleSession.endTime,
+    scheduleId: att.scheduleSession.scheduleId,
+    checkedIn: att.records.length > 0,
+    checkInTime: att.records.length > 0 ? att.records[0].time : null,
+    checkInCreatedAt: att.records.length > 0 ? att.records[0].createdAt : null,
+  }));
+
+  return { success: true, data };
 };
 
 /**
@@ -1012,43 +1004,30 @@ export const getFullAttendanceHistoryService = async (
     throw new AppError("Bạn không có quyền xem thông tin này", 403);
   }
 
-  // Debug logging
-  console.log("=== getFullAttendanceHistoryService ===");
-  console.log("sessionId:", sessionId);
-  console.log("date param:", date);
-  console.log("Total attendances found:", session.attendances.length);
-  session.attendances.forEach((att, idx) => {
-    console.log(`Attendance ${idx}:`, {
-      id: att.id,
-      date: att.date,
-      dateObj: new Date(att.date),
-      qrCode: att.qrCode,
-    });
-  });
+  // Helper to get YYYY-MM-DD in Vietnam timezone (UTC+7)
+  const getVietnamDateString = (dateInput: string | Date) => {
+    const d = new Date(dateInput);
+    const vietnamOffset = 7 * 60;
+    const vietnamTime = new Date(d.getTime() + (vietnamOffset + d.getTimezoneOffset()) * 60000);
+    return `${vietnamTime.getFullYear()}-${String(vietnamTime.getMonth() + 1).padStart(2, '0')}-${String(vietnamTime.getDate()).padStart(2, '0')}`;
+  };
 
   // If date is provided, find the matching attendance record
   let attendance = null;
   if (date) {
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-    console.log("Target date:", targetDate, "timestamp:", targetDate.getTime());
-    
+    const targetDateStr = getVietnamDateString(date);
+
     attendance = session.attendances.find(att => {
-      const attDate = new Date(att.date);
-      attDate.setHours(0, 0, 0, 0);
-      console.log(`Comparing with attDate:`, attDate, "timestamp:", attDate.getTime(), "match:", attDate.getTime() === targetDate.getTime());
-      return attDate.getTime() === targetDate.getTime();
+      const attDateStr = getVietnamDateString(att.date);
+      return attDateStr === targetDateStr;
     });
   } else {
     // Only use first attendance if no date provided AND attendances exist
     // If attendances exist, use the first one (most recent by default)
     if (session.attendances.length > 0) {
       attendance = session.attendances[0];
-      console.log("No date param, using first attendance:", attendance?.id);
     }
   }
-
-  console.log("Final attendance selected:", attendance?.id);
 
   const attendedStudentIds = attendance 
     ? attendance.records.map((r) => r.studentId) 

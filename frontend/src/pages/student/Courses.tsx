@@ -96,7 +96,15 @@ export const Courses = () => {
                   onClick={() => handleCourseClick(course.id)}
                   className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg hover:border-blue-300 transition-shadow cursor-pointer"
                 >
-                  <div className="h-40 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                  {course.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.name}
+                      className="w-full aspect-video object-cover"
+                    />
+                  ) : (
+                    <div className="w-full aspect-video bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                  )}
                   <div className="p-4">
                     <h3 className="font-semibold text-lg text-gray-800 mb-2 line-clamp-2">
                       {course.name}

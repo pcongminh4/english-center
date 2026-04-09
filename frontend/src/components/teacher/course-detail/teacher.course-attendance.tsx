@@ -32,11 +32,23 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
     loadSessions();
   }, [scheduleId]);
 
+  const getTodayString = () => {
+    const now = new Date();
+    // Use Vietnam timezone (UTC+7) to get today's date
+    const vietnamOffset = 7 * 60; // 7 hours in minutes
+    const vietnamTime = new Date(now.getTime() + (vietnamOffset + now.getTimezoneOffset()) * 60000);
+    return `${vietnamTime.getFullYear()}-${String(vietnamTime.getMonth() + 1).padStart(2, '0')}-${String(vietnamTime.getDate()).padStart(2, '0')}`;
+  };
+
   const loadSessions = async () => {
     try {
       setLoading(true);
       const data = await getScheduleSessionsAttendance(scheduleId);
-      setSessions(data.sessions);
+      const today = getTodayString();
+      const filteredSessions = data.sessions
+        .filter(s => s.actualDate.split('T')[0] <= today)
+        .sort((a, b) => b.actualDate.localeCompare(a.actualDate));
+      setSessions(filteredSessions);
       setTotalRegistered(data.totalRegistered);
       setError("");
       
@@ -197,12 +209,12 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
     const created = new Date(qrCreatedAt).getTime();
     const now = Date.now();
     const elapsed = now - created;
-    const expiryTime = 30 * 60 * 1000; // 30 minutes
+    const expiryTime = 5 * 60 * 1000; // 5 minutes
     const remaining = expiryTime - elapsed;
 
     if (remaining <= 0) {
       return { status: "expired", text: "Đã hết hạn" };
-    } else if (remaining < 10 * 60 * 1000) {
+    } else if (remaining < 2 * 60 * 1000) {
       return { status: "warning", text: `${Math.ceil(remaining / 60000)} phút còn lại` };
     } else {
       return { status: "active", text: `${Math.ceil(remaining / 60000)} phút còn lại` };
@@ -371,7 +383,7 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
                                       {qrStatus.text}
                                     </div>
                                   )}
-                                  {expandedSession.status !== "FINISHED" && (
+                                  {expandedSession.status === "ACTIVE" && (
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -387,7 +399,7 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
                               ) : (
                                 <div className="bg-white rounded-lg p-6 text-center shadow-sm">
                                   <p className="text-gray-500 mb-4">Chưa tạo mã QR cho buổi học này</p>
-                                  {expandedSession.status !== "FINISHED" && (
+                                  {expandedSession.status === "ACTIVE" && (
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -473,6 +485,10 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
                                           ) : expandedSession.status === "FINISHED" ? (
                                             <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                               Vắng mặt
+                                            </div>
+                                          ) : expandedSession.status === "PLANNED" ? (
+                                            <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                                              Chưa bắt đầu
                                             </div>
                                           ) : (
                                             <button

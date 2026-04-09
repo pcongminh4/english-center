@@ -322,7 +322,8 @@ export const getStudentCoursesService = async (
   studentId: number,
 ): Promise<any[]> => {
   try {
-    const registrations = await prisma.studentRegisterCourse.findMany({
+    // Get courses from StudentRegisterCourse (direct enrollment)
+    const directRegistrations = await prisma.studentRegisterCourse.findMany({
       where: {
         studentId,
         student: { deletedAt: null },
@@ -333,7 +334,67 @@ export const getStudentCoursesService = async (
       orderBy: { createdAt: "desc" },
     });
 
-    return registrations.map((r) => toCourseResponse(r.course));
+    // Get courses from ScheduleRegistration → Schedule → Course
+    const scheduleRegistrations = await prisma.scheduleRegistration.findMany({
+      where: {
+        studentId,
+        student: { deletedAt: null },
+      },
+      include: {
+        schedule: {
+          include: {
+            course: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Merge and deduplicate by course ID
+    const courseMap = new Map<number, any>();
+
+    for (const r of directRegistrations) {
+      if (!courseMap.has(r.course.id)) {
+        courseMap.set(r.course.id, {
+          id: r.course.id,
+          name: r.course.name,
+          type: r.course.type,
+          courseSkill: r.course.courseSkill,
+          status: r.course.status,
+          price: r.course.price,
+          sale: r.course.sale,
+          thumbnail: buildCourseThumbnailUrl(r.course.thumbnail),
+          totalSession: r.course.totalSession,
+          minBand: r.course.minBand,
+          maxBand: r.course.maxBand,
+          createdAt: r.course.createdAt,
+          updatedAt: r.course.updatedAt,
+        });
+      }
+    }
+
+    for (const r of scheduleRegistrations) {
+      const course = r.schedule.course;
+      if (!courseMap.has(course.id)) {
+        courseMap.set(course.id, {
+          id: course.id,
+          name: course.name,
+          type: course.type,
+          courseSkill: course.courseSkill,
+          status: course.status,
+          price: course.price,
+          sale: course.sale,
+          thumbnail: buildCourseThumbnailUrl(course.thumbnail),
+          totalSession: course.totalSession,
+          minBand: course.minBand,
+          maxBand: course.maxBand,
+          createdAt: course.createdAt,
+          updatedAt: course.updatedAt,
+        });
+      }
+    }
+
+    return Array.from(courseMap.values());
   } catch (error) {
     throw new AppError(
       "Lỗi khi lấy danh sách khóa học: " + (error as Error).message,

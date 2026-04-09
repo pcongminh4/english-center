@@ -8,6 +8,7 @@ import { AppError } from "../middleware/errorHandler";
 import prisma from "../config/database";
 import { toScheduleResponse } from "../utils/Mapper/schedule.mapper";
 import { Prisma } from "@prisma/client";
+import { generateRecurringSessions } from "./attendance.service";
 
 // Tạo schedule mới
 export const createScheduleService = async (
@@ -174,6 +175,52 @@ export const createScheduleService = async (
       },
     });
   });
+
+  // Auto-generate ScheduleAttendance records for all session dates
+  try {
+    const sessionDays = schedule.sessions.map((s) => s.day);
+
+    const allDates = generateRecurringSessions(start, end, sessionDays);
+
+    // Limit to course.totalSession if set (> 0)
+    const maxSessions = course.totalSession > 0 ? course.totalSession : allDates.length;
+    const limitedDates = allDates.slice(0, maxSessions);
+
+    // Map day name to session for quick lookup
+    const dayMap: { [key: number]: string } = {
+      1: "MONDAY",
+      2: "TUESDAY",
+      3: "WEDNESDAY",
+      4: "THURSDAY",
+      5: "FRIDAY",
+      6: "SATURDAY",
+      0: "SUNDAY",
+    };
+
+    // Create attendance records for each date
+    const attendanceData = limitedDates.map((date) => {
+      const dayName = dayMap[date.getDay()];
+      const matchingSession = schedule.sessions.find((s) => s.day === dayName);
+      if (!matchingSession) return null;
+      return {
+        scheduleDayId: matchingSession.id,
+        date,
+        qrCode: "",
+        totalAbsent: 0,
+      };
+    }).filter((d): d is NonNullable<typeof d> => d !== null);
+
+    if (attendanceData.length > 0) {
+      await prisma.scheduleAttendance.createMany({
+        data: attendanceData,
+      });
+    }
+
+    console.log(`[SCHEDULE] Auto-generated ${attendanceData.length} attendance records for schedule ${schedule.id}`);
+  } catch (error) {
+    console.error("[SCHEDULE] Failed to auto-generate attendance records:", error);
+    // Don't fail schedule creation if attendance generation fails
+  }
 
   return toScheduleResponse(schedule);
 };
@@ -575,7 +622,22 @@ export const updateScheduleService = async (
   }
 
   const updatedSchedule = await prisma.$transaction(async (tx) => {
+    // Delete old attendance records and sessions if sessions are being updated
     if (data.sessions) {
+      // Get existing session IDs to delete their attendance records
+      const existingSessions = await tx.scheduleSession.findMany({
+        where: { scheduleId: id },
+        select: { id: true },
+      });
+      const existingSessionIds = existingSessions.map((s) => s.id);
+
+      // Delete attendance records linked to old sessions
+      if (existingSessionIds.length > 0) {
+        await tx.scheduleAttendance.deleteMany({
+          where: { scheduleDayId: { in: existingSessionIds } },
+        });
+      }
+
       await tx.scheduleSession.deleteMany({
         where: { scheduleId: id },
       });
@@ -615,6 +677,49 @@ export const updateScheduleService = async (
       },
     });
   });
+
+  // Auto-regenerate ScheduleAttendance records for updated schedule
+  if (data.sessions) {
+    try {
+      const sessionDays = updatedSchedule.sessions.map((s) => s.day);
+      const allDates = generateRecurringSessions(start, end, sessionDays);
+
+      const maxSessions = course.totalSession > 0 ? course.totalSession : allDates.length;
+      const limitedDates = allDates.slice(0, maxSessions);
+
+      const dayMap: { [key: number]: string } = {
+        1: "MONDAY",
+        2: "TUESDAY",
+        3: "WEDNESDAY",
+        4: "THURSDAY",
+        5: "FRIDAY",
+        6: "SATURDAY",
+        0: "SUNDAY",
+      };
+
+      const attendanceData = limitedDates.map((date) => {
+        const dayName = dayMap[date.getDay()];
+        const matchingSession = updatedSchedule.sessions.find((s) => s.day === dayName);
+        if (!matchingSession) return null;
+        return {
+          scheduleDayId: matchingSession.id,
+          date,
+          qrCode: "",
+          totalAbsent: 0,
+        };
+      }).filter((d): d is NonNullable<typeof d> => d !== null);
+
+      if (attendanceData.length > 0) {
+        await prisma.scheduleAttendance.createMany({
+          data: attendanceData,
+        });
+      }
+
+      console.log(`[SCHEDULE] Auto-regenerated ${attendanceData.length} attendance records for updated schedule ${updatedSchedule.id}`);
+    } catch (error) {
+      console.error("[SCHEDULE] Failed to auto-regenerate attendance records:", error);
+    }
+  }
 
   return toScheduleResponse(updatedSchedule);
 };
