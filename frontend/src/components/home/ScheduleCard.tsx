@@ -12,7 +12,7 @@ const ScheduleCard: React.FC<{ course: Course }> = ({ course }) => {
       {/* --- Image Section --- */}
       <div className="relative h-52 overflow-hidden">
         <img
-          src={`${import.meta.env.VITE_FILE_URL}/uploads/courses/${course.thumbnail}`}
+          src={course.thumbnail ?? undefined}
           alt={course.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />

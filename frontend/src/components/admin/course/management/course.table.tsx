@@ -135,19 +135,19 @@ const CourseTable: React.FC<CourseTableProps> = ({
         <tbody className="bg-white divide-y divide-gray-200">
           {courses.map((course) => (
             <tr key={course.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                {course.thumbnail ? (
-                  <img
-                    src={course.thumbnail}
-                    alt={course.name}
-                    className="w-16 h-12 rounded object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-12 bg-gray-200 rounded flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Không có ảnh</span>
-                  </div>
-                )}
-              </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {course.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.name}
+                      className="w-16 h-12 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-12 bg-gray-200 rounded flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">Không có ảnh</span>
+                    </div>
+                  )}
+                </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {course.name}
               </td>

@@ -4,6 +4,8 @@ import { AppError } from "../middleware/errorHandler";
 import prisma from "../config/database";
 import { StudentResponse } from "../DTOS/Student/student.response";
 import { toStudentResponse } from "../utils/Mapper/student.mapper";
+import { toCourseResponse } from "../utils/Mapper/course.mapper";
+import { buildCourseThumbnailUrl } from "../utils/fileUrl";
 import { PagingData } from "../DTOS/pagination";
 import { CreateStudentRequest, GetStudentRequest, UpdateStudentRequest } from "../DTOS/Student";
 
@@ -331,21 +333,7 @@ export const getStudentCoursesService = async (
       orderBy: { createdAt: "desc" },
     });
 
-    return registrations.map((r) => ({
-      id: r.course.id,
-      name: r.course.name,
-      type: r.course.type,
-      courseSkill: r.course.courseSkill,
-      status: r.course.status,
-      price: r.course.price,
-      sale: r.course.sale,
-      thumbnail: r.course.thumbnail,
-      totalSession: r.course.totalSession,
-      minBand: r.course.minBand,
-      maxBand: r.course.maxBand,
-      createdAt: r.course.createdAt,
-      updatedAt: r.course.updatedAt,
-    }));
+    return registrations.map((r) => toCourseResponse(r.course));
   } catch (error) {
     throw new AppError(
       "Lỗi khi lấy danh sách khóa học: " + (error as Error).message,
@@ -432,7 +420,9 @@ export const getStudentsByParentUserIdService = async (
             courseId: registration.schedule.course.id,
             name: registration.schedule.course.name,
             skill: registration.schedule.course.courseSkill,
-            thumbnail: registration.schedule.course.thumbnail,
+            thumbnail:
+              buildCourseThumbnailUrl(registration.schedule.course.thumbnail) ??
+              "default.jpg",
           },
           startTime: registration.schedule.startTime,
           endTime: registration.schedule.endTime,

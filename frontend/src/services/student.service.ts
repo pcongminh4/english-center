@@ -59,7 +59,7 @@ export const getStudentCoursesService = async (): Promise<ApiResponse<any[]>> =>
   return res.data;
 };
 
-export const getStudentsByParentMeService = async (): Promise<ApiResponse<any[]>> => {
+export const getStudentsByParentMeService = async (): Promise<ApiResponse<StudentResponse[]>> => {
   const res = await axiosInstance.get('/students/by-parent/me');
   return res.data;
 };

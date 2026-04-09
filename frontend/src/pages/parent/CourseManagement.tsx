@@ -62,14 +62,13 @@ const courses = useMemo(() => {
     
     return {
       registrationId: schedule.registrationId,
-      courseId: schedule.course?.courseId, // Use courseId from course object or fallback to extracted courseId
+      courseId: schedule.course?.courseId,
       name: courseInfo?.name ?? 'Khóa học không tên',
-      // Format skill: READING_LISTENING -> Reading & Listening
       skill: (courseInfo?.skill || 'General')
         .replace(/_/g, ' & ')
         .toLowerCase()
         .replace(/\b\w/g, l => l.toUpperCase()), 
-      thumbnail: courseInfo?.thumbnail || 'https://placehold.co/600x400@2x.png',
+      thumbnail: courseInfo?.thumbnail,
       status: isActive ? 'ACTIVE' : 'COMPLETED',
       statusLabel: isActive ? 'Đang học' : 'Đã hoàn thành',
       dateLabel: `${formatDate(schedule.startTime)} - ${formatDate(schedule.endTime)}`,
@@ -111,8 +110,8 @@ useEffect(() => {
       try {
         console.log(`🚀 Đang gọi API lấy bài test cho Course ID: ${courseId}`);
         const response = await getCourseTestsByCourseId(courseId);
-        // Handle the response structure: { success, message, data: [...] }
-        const testsData = Array.isArray(response.data) ? response.data : [];
+        // Handle the paginated response structure: { success, message, data: { data: [...] } }
+        const testsData = Array.isArray(response.data?.data) ? response.data.data : [];
         results[courseId] = testsData;
       } catch (error) {
         console.error(`Error fetching tests for course ${courseId}:`, error);
