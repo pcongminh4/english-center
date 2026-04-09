@@ -9,6 +9,7 @@ import { RoleBasedRedirect } from '../components/common/RoleBasedRedirect';
 import CourseDetail from '../pages/student/CourseDetail';
 import CourseRegistration from '../pages/student/CourseRegistration';
 import StudentPaymentResult from '../pages/student/PaymentResult';
+import StudentPaymentHistory from '../pages/student/PaymentHistory';
 
 const StudentRoutes: RouteObject = {
   element: <StudentLayout />,
@@ -41,6 +42,10 @@ const StudentRoutes: RouteObject = {
     {
       path: 'payment-result',
       element: <><RoleBasedRedirect allowedRole="STUDENT" redirectTo="/student/dashboard" /><StudentPaymentResult /></>,
+    },
+    {
+      path: 'payment-history',
+      element: <><RoleBasedRedirect allowedRole="STUDENT" redirectTo="/student/dashboard" /><StudentPaymentHistory /></>,
     },
     {
       path: 'profile',

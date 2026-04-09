@@ -7,6 +7,7 @@ import TimeTableManament from '../pages/parent/TimeTableManament';
 import AttendanceManagement from '../pages/parent/AttendanceManagement';
 import ParentProfile from '../pages/parent/Profile';
 import ParentDashboard from '../pages/parent/Dashboard';
+import ParentPaymentHistory from '../pages/parent/PaymentHistory';
 
 const ParentRoutes: RouteObject = {
   path: 'parent',
@@ -43,6 +44,10 @@ const ParentRoutes: RouteObject = {
     {
       path: 'schedule/timetable',
       element: <TimeTableManament />,
+    },
+    {
+      path: 'payment-history',
+      element: <ParentPaymentHistory />,
     },
   ],
 };

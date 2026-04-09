@@ -5,6 +5,7 @@ import {
   BookOpen,
   Wallet,
   User,
+  Receipt,
   X
 } from 'lucide-react';
 import { useStudentStore } from '../../stores/student.store';
@@ -35,6 +36,11 @@ const navItems: NavItem[] = [
     icon: <Wallet size={20} />,
     label: 'Đăng ký khóa học',
     path: '/student/course-registration',
+  },
+  {
+    icon: <Receipt size={20} />,
+    label: 'Lịch sử thanh toán',
+    path: '/student/payment-history',
   },
   {
     icon: <User size={20} />,

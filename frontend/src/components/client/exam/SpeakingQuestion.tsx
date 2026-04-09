@@ -15,7 +15,7 @@ export const SpeakingQuestion: React.FC<SpeakingQuestionProps> = ({
   question,
   onSave,
   saved,
-  showPassage = true,
+  showPassage: _showPassage = true,
   showImages = true,
 }) => {
   const [isSaving, setIsSaving] = useState(false);

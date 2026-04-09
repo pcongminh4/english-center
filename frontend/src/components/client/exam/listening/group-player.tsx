@@ -100,7 +100,6 @@ const GroupPlayer = ({
       <div className="space-y-4 pl-2 border-l-2 border-purple-200">
         {group.questions.map((q) => {
           const selectedAnswer = answers[`L-${q.index}`] ?? null;
-          const hasText = q.answerA || q.answerB;
 
           return (
             <div key={q.index} className="space-y-2">

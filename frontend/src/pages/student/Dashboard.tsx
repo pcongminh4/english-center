@@ -18,16 +18,6 @@ interface ParentData {
   phone: string;
 }
 
-interface Session {
-  id: number;
-  className: string;
-  time: string;
-  classroom: string;
-  building: string;
-  teacherName?: string;
-  dayOfWeek: string;
-}
-
 interface Course {
   id: number;
   name: string;

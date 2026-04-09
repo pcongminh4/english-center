@@ -25,7 +25,7 @@ export const WeeklySchedule = ({
   onCheckIn,
   checkedInSessions,
 }: WeeklyScheduleProps) => {
-  const [currentDayIndex, setCurrentDayIndex] = useState(
+  const [currentDayIndex, _setCurrentDayIndex] = useState(
     new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
   );
 
@@ -42,20 +42,6 @@ export const WeeklySchedule = ({
       return timeA - timeB;
     });
   });
-
-  const handleCheckIn = async (sessionId: number, qrCode: string) => {
-    console.log('[WEEKLY SCHEDULE] Check-in triggered:', {
-      sessionId,
-      qrCodeLength: qrCode?.length,
-      qrCodePreview: qrCode?.substring(0, 30),
-      timestamp: new Date().toISOString()
-    });
-    await onCheckIn(sessionId, qrCode);
-    console.log('[WEEKLY SCHEDULE] Check-in completed:', {
-      sessionId,
-      timestamp: new Date().toISOString()
-    });
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

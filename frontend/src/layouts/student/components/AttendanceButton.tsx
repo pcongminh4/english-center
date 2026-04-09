@@ -12,7 +12,7 @@ interface AttendanceButtonProps {
 
 export const AttendanceButton = ({
   classStartTime,
-  classEndTime,
+  classEndTime: _classEndTime,
   onCheckIn,
   isCheckedIn,
 }: AttendanceButtonProps) => {

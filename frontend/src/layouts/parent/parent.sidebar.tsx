@@ -19,6 +19,7 @@ import {
   ArrowRightOnRectangleIcon,
   ChartBarIcon,
   HeartIcon,
+  CreditCardIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "../../stores/auth.store";
 
@@ -100,6 +101,14 @@ const ParentSidebar = () => {
         { title: "Kết quả học tập", icon: ChartBarIcon, path: "/parent/academic/results" },
         { title: "Điểm danh", icon: ClockIcon, path: "/parent/academic/attendance" },
       ]
+    },
+    {
+      id: "payment",
+      title: "Lịch sử thanh toán",
+      icon: CreditCardIcon,
+      path: "/parent/payment-history",
+      matchPaths: ["/parent/payment-history"],
+      badge: null,
     },
   ];
 

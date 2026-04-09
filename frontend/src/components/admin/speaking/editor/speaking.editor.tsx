@@ -36,7 +36,7 @@ const SpeakingExamEditor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [loading, setLoading] = useState(false);
   const [examId, setExamId] = useState<number | null>(isEditing ? Number(id) : null);
-  const [examData, setExamData] = useState<SpeakingResponse | null>(null);
+  const [, setExamData] = useState<SpeakingResponse | null>(null);
   const [part1Data, setPart1Data] = useState<any>(null);
   const [part2Data, setPart2Data] = useState<any>(null);
   const [part3Data, setPart3Data] = useState<any>(null);

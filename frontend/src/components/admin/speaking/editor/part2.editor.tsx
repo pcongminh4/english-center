@@ -95,7 +95,7 @@ const Part2Editor: React.FC<Part2EditorProps> = ({
                 maxFileSize={5}
                 accept="image/*"
                 initialImages={initialData?.imageThree ? [initialData.imageThree] : []}
-                onFilesChange={(fieldName, files) => {
+                onFilesChange={(_fieldName, files) => {
                   if (files.length > 0) {
                     setImageThreeFile(files[0]);
                   }
@@ -111,7 +111,7 @@ const Part2Editor: React.FC<Part2EditorProps> = ({
                 maxFileSize={5}
                 accept="image/*"
                 initialImages={initialData?.imageFour ? [initialData.imageFour] : []}
-                onFilesChange={(fieldName, files) => {
+                onFilesChange={(_fieldName, files) => {
                   if (files.length > 0) {
                     setImageFourFile(files[0]);
                   }

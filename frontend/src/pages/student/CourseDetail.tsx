@@ -129,16 +129,6 @@ export default function CourseDetail() {
     });
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getDayLabel = (day: string) => {
     const dayMap: Record<string, string> = {
       MONDAY: 'Thứ 2',

@@ -27,7 +27,6 @@ const SingleQuestionPlayer = ({
   const LABELS = ALL_LABELS.slice(0, answerCount) as readonly ("A" | "B" | "C" | "D")[];
   const audioRef = useRef<HTMLAudioElement>(null);
   const [audioEnded, setAudioEnded] = useState(false);
-  const hasAnswerLabels = question.answerA || question.answerB;
 
   // Auto-play audio when this slide becomes current
   useEffect(() => {

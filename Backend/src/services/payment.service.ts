@@ -281,11 +281,14 @@ export const ipnHandlerService = async (
 
     return { RspCode: "00", Message: "Confirm Success" };
   } else {
-    // Payment failed
+    // "24" = user cancelled the payment; any other code = actual payment failure
+    const isCancelledByUser = vnpResponseCode === "24";
+    const paymentStatus = isCancelledByUser ? "CANCELLED" : "FAILED";
+
     await prisma.paymentTransaction.update({
       where: { id: payment.id },
       data: {
-        status: "FAILED",
+        status: paymentStatus,
         vnpResponseCode,
         vnpTransactionNo,
         vnpBankCode,
@@ -355,7 +358,10 @@ export const returnHandlerService = async (
       }
     }
   } else if (txnRef && signatureValid && vnpResponseCode && vnpResponseCode !== "00") {
-    // Payment was cancelled/failed from VNPay side — mark it
+    // "24" = user cancelled; other codes = actual payment failure
+    const isCancelledByUser = vnpResponseCode === "24";
+    const paymentStatus = isCancelledByUser ? "CANCELLED" : "FAILED";
+
     const payment = await prisma.paymentTransaction.findUnique({
       where: { txnRef },
     });
@@ -363,7 +369,7 @@ export const returnHandlerService = async (
       await prisma.paymentTransaction.update({
         where: { id: payment.id },
         data: {
-          status: "FAILED",
+          status: paymentStatus,
           vnpResponseCode,
           vnpTransactionNo,
           vnpBankCode,

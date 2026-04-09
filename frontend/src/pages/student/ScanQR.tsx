@@ -58,7 +58,7 @@ const ScanQR = () => {
               setScanResult({ success: false, message: 'Điểm danh thất bại' });
             }
           },
-          (errorMessage: string) => {
+          (_errorMessage: string) => {
             // Ignore scan errors, they happen continuously
           }
         );

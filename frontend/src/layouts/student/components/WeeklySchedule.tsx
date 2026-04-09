@@ -25,7 +25,7 @@ export const WeeklySchedule = ({
   onCheckIn,
   checkedInSessions,
 }: WeeklyScheduleProps) => {
-  const [currentDayIndex, setCurrentDayIndex] = useState(
+  const [currentDayIndex, _setCurrentDayIndex] = useState(
     new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
   );
 

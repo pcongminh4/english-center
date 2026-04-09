@@ -12,17 +12,29 @@ import {
   Button,
 } from "@material-tailwind/react";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
+  PieChart as _PieChart,
+  Pie as _Pie,
+  Cell as _Cell,
+  BarChart as _BarChart,
+  Bar as _Bar,
+  XAxis as _XAxis,
+  YAxis as _YAxis,
+  CartesianGrid as _CartesianGrid,
+  Tooltip as _Tooltip,
+  Legend as _Legend,
 } from "recharts";
+import type { FC } from "react";
+// Casts needed: recharts v3 bundles its own @types/react which conflicts with React 18 types
+const PieChart = _PieChart as FC<any>;
+const Pie = _Pie as FC<any>;
+const Cell = _Cell as FC<any>;
+const BarChart = _BarChart as FC<any>;
+const Bar = _Bar as FC<any>;
+const XAxis = _XAxis as FC<any>;
+const YAxis = _YAxis as FC<any>;
+const CartesianGrid = _CartesianGrid as FC<any>;
+const Tooltip = _Tooltip as FC<any>;
+const Legend = _Legend as FC<any>;
 import {
   ChartPieIcon,
   CurrencyDollarIcon,
@@ -482,7 +494,7 @@ const StatisticsPage = () => {
                         />
                         <YAxis
                           tick={{ fontSize: 12 }}
-                          tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                          tickFormatter={(value: number) => `${(value / 1000000).toFixed(1)}M`}
                         />
                         <Tooltip content={<RevenueTooltip />} />
                         <Legend />

@@ -12,7 +12,7 @@ export const examRegistrationSchema = z.object({
     .min(1, "CCCD là bắt buộc")
     .regex(/^\d{12}$/, "CCCD phải gồm 12 chữ số"),
   examType: z.enum(["READING_LISTENING", "SPEAKING_WRITING"], {
-    required_error: "Loại bài thi là bắt buộc",
+    error: "Loại bài thi là bắt buộc",
   }),
 });
 
