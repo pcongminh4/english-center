@@ -51,10 +51,10 @@ export const parseQRString = (qrString: string): { sessionId: number; timestamp:
 };
 
 /**
- * Check if QR code is expired (5 minutes)
+ * Check if QR code is expired (30 minutes)
  */
 export const isQRExpired = (timestamp: number): boolean => {
   const now = Date.now();
-  const expiryTime = timestamp + 5 * 60 * 1000; // 5 minutes in milliseconds
+  const expiryTime = timestamp + 30 * 60 * 1000; // 30 minutes in milliseconds
   return now > expiryTime;
 };

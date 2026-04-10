@@ -11,6 +11,64 @@
   opacity: 1;
 }
 
+/* QR Scanner Overrides - Make camera area clean and bright */
+#qr-reader {
+  border: none !important;
+  background: transparent !important;
+}
+
+#qr-reader__scan_region {
+  background: transparent !important;
+  min-height: 250px;
+}
+
+#qr-reader__scan_region > img {
+  display: none !important;
+}
+
+#qr-reader__dashboard {
+  padding: 8px !important;
+}
+
+#qr-reader__dashboard_section {
+  padding: 4px 0 !important;
+}
+
+#qr-reader__dashboard_section_csr button {
+  background-color: #2563eb !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  margin: 4px !important;
+}
+
+#qr-reader__dashboard_section_csr button:hover {
+  background-color: #1d4ed8 !important;
+}
+
+#qr-reader__dashboard_section_csr span {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+}
+
+#qr-reader__dashboard_section_swaplink {
+  font-size: 13px !important;
+  color: #2563eb !important;
+  cursor: pointer !important;
+}
+
+#qr-reader__status_window {
+  background: transparent !important;
+}
+
+#qr-reader video {
+  border-radius: 8px !important;
+  object-fit: cover !important;
+}
+
 @layer utilities {
   /* Custom Scrollbar */
   .scrollbar-thin {

@@ -14,6 +14,7 @@ export interface SessionAttendance {
   absentCount: number;
   totalRegistered: number;
   hasAttendance: boolean;
+  attendanceId?: number;
 }
 
 export interface ScheduleAttendanceData {
@@ -78,16 +79,8 @@ export interface StudentAttendanceRecord {
 export const getScheduleSessionsAttendance = async (
   scheduleId: number
 ): Promise<ScheduleAttendanceData> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.get<ApiResponse<ScheduleAttendanceData>>(
-    `/attendance/sessions/${scheduleId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.data.data) {
+  const response = await axiosInstance.get(`/attendance/sessions/${scheduleId}`);
+  if (!response.data?.data) {
     throw new Error('No data received from server');
   }
   return response.data.data;
@@ -98,18 +91,17 @@ export const generateQR = async (
   sessionId: number,
   actualDate?: string
 ): Promise<{ qrCode: string; sessionId: number }> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.post<ApiResponse<{ qrCode: string; sessionId: number }>>(
+  const response = await axiosInstance.post(
     `/attendance/generate-qr/${sessionId}`,
     actualDate ? { date: actualDate } : {},
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     }
   );
-  if (!response.data.data) {
-    throw new Error('No data received from server');
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'No data received from server');
   }
   return response.data.data;
 };
@@ -120,18 +112,17 @@ export const manualCheckIn = async (
   studentId: number | string,
   actualDate?: string
 ): Promise<{ success: boolean; message: string; time?: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.post<ApiResponse<{ success: boolean; message: string; time?: string }>>(
+  const response = await axiosInstance.post(
     `/attendance/manual-checkin/${sessionId}`,
     actualDate ? { studentId: Number(studentId), date: actualDate } : { studentId: Number(studentId) },
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     }
   );
-  if (!response.data.data) {
-    throw new Error('No data received from server');
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'No data received from server');
   }
   return response.data.data;
 };
@@ -141,42 +132,52 @@ export const getFullAttendanceHistory = async (
   sessionId: number,
   date?: string
 ): Promise<FullAttendanceData> => {
-  const token = localStorage.getItem('token');
   const url = date 
     ? `/attendance/full-history/${sessionId}?date=${encodeURIComponent(date)}`
     : `/attendance/full-history/${sessionId}`;
   
-  const response = await axiosInstance.get<ApiResponse<FullAttendanceData>>(
-    url,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.data.data) {
-    throw new Error('No data received from server');
+  const response = await axiosInstance.get(url);
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'No data received from server');
   }
   return response.data.data;
 };
 
-// Student check-in with QR code
+// Student scan QR code for attendance
+export const scanQRCode = async (
+  qrCode: string
+): Promise<{ success: boolean; message: string; time?: string }> => {
+  const response = await axiosInstance.post(
+    '/attendance/scan-qr',
+    { qrCode },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'Không nhận được dữ liệu từ server');
+  }
+  return response.data.data;
+};
+
+// Student check-in with QR code via session ID
 export const studentCheckIn = async (
   sessionId: number,
   qrCode: string
 ): Promise<{ success: boolean; message: string; time?: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.post<ApiResponse<{ success: boolean; message: string; time?: string }>>(
+  const response = await axiosInstance.post(
     `/attendance/checkin/${sessionId}`,
     { qrCode },
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     }
   );
-  if (!response.data.data) {
-    throw new Error('No data received from server');
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'Không nhận được dữ liệu từ server');
   }
   return response.data.data;
 };
@@ -187,38 +188,25 @@ export const cancelAttendance = async (
   studentId: number,
   actualDate?: string
 ): Promise<{ success: boolean; message: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.delete<ApiResponse<{ success: boolean; message: string }>>(
+  const response = await axiosInstance.delete(
     `/attendance/cancel/${sessionId}/${studentId}`,
     actualDate ? { 
       data: { date: actualDate },
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-    } : {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+    } : undefined
   );
-  if (!response.data.data) {
-    throw new Error('No data received from server');
+  if (!response.data?.data) {
+    throw new Error(response.data?.message || 'No data received from server');
   }
   return response.data.data;
 };
 
 // Get student's attendance records
 export const getStudentAttendanceRecords = async (): Promise<StudentAttendanceRecord[]> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.get<ApiResponse<StudentAttendanceRecord[]>>(
-    '/attendance/student',
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.data.data) {
+  const response = await axiosInstance.get('/attendance/student');
+  if (!response.data?.data) {
     throw new Error('No data received from server');
   }
   return response.data.data;
@@ -240,16 +228,8 @@ export interface CourseAttendanceRecord {
 export const getStudentAttendanceByCourseId = async (
   courseId: number
 ): Promise<CourseAttendanceRecord[]> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.get<ApiResponse<CourseAttendanceRecord[]>>(
-    `/attendance/student/course/${courseId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.data.data) {
+  const response = await axiosInstance.get(`/attendance/student/course/${courseId}`);
+  if (!response.data?.data) {
     throw new Error('No data received from server');
   }
   return response.data.data;
@@ -259,16 +239,8 @@ export const getStudentAttendanceByCourseId = async (
 export const getStudentAttendanceForParent = async (
   studentId: number
 ): Promise<StudentAttendanceRecord[]> => {
-  const token = localStorage.getItem('token');
-  const response = await axiosInstance.get<ApiResponse<StudentAttendanceRecord[]>>(
-    `/attendance/parent/student/${studentId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.data.data) {
+  const response = await axiosInstance.get(`/attendance/parent/student/${studentId}`);
+  if (!response.data?.data) {
     throw new Error('No data received from server');
   }
   return response.data.data;

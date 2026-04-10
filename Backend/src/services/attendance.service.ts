@@ -149,15 +149,8 @@ export const generateQRCodeService = async (
     },
   });
 
-  if (existingAttendance) {
-    // Check if expired, regenerate if needed
-    if (!isQRExpired(new Date(existingAttendance.createdAt).getTime())) {
-      return {
-        qrCode: existingAttendance.qrCode,
-        sessionId: existingAttendance.scheduleDayId,
-      };
-    }
-  }
+  // Always generate new QR code when teacher requests
+  // This ensures fresh timestamp for expiry timer
 
   // Generate new QR code
   const qrCode = generateQRString(sessionId);
@@ -177,6 +170,7 @@ export const generateQRCodeService = async (
       date: sessionDate, // Store actual date
       qrCode,
       totalAbsent: 0,
+      createdAt: new Date(), // Explicit timestamp for QR expiry calculation
     },
   });
 
@@ -212,15 +206,19 @@ export const scanQRCodeService = async (
   if (isExpired) {
     return {
       success: false,
-      message: "Mã QR đã hết hạn (quá 5 phút)",
+      message: "Mã QR đã hết hạn (quá 30 phút)",
     };
   }
 
   // Check if session exists
   // QR code contains scheduleSession.id, so we need to find scheduleAttendance by scheduleDayId
+  // Use orderBy createdAt desc to get the LATEST attendance record (correct for recurring sessions)
   const attendance = await prisma.scheduleAttendance.findFirst({
     where: { 
       scheduleDayId: sessionId,
+    },
+    orderBy: {
+      createdAt: 'desc',
     },
     include: {
       scheduleSession: {
@@ -254,27 +252,8 @@ export const scanQRCodeService = async (
     };
   }
 
-  // Check if current time is within session hours
-  const sessionDate = new Date(attendance.date);
-  // Use setUTCHours to avoid timezone offset issues when normalizing date
-  sessionDate.setUTCHours(0, 0, 0, 0);
-  const sessionStartTime = setVietnamTime(sessionDate, attendance.scheduleSession.startTime);
-  const sessionEndTime = setVietnamTime(sessionDate, attendance.scheduleSession.endTime);
-  const nowForCheck = new Date();
-
-  if (nowForCheck.getTime() < sessionStartTime.getTime()) {
-    return {
-      success: false,
-      message: "Buổi học chưa bắt đầu, không thể điểm danh",
-    };
-  }
-
-  if (nowForCheck.getTime() > sessionEndTime.getTime()) {
-    return {
-      success: false,
-      message: "Buổi học đã kết thúc, không thể điểm danh",
-    };
-  }
+  // QR expiry is already validated above via isQRExpired(timestamp).
+  // If teacher generated QR, the session is active - no need for timezone-based session time check.
 
   // Idempotency check: already scanned?
   const existingRecord = await prisma.attendanceRecord.findFirst({

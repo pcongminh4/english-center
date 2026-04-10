@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Card,
   CardBody,
@@ -26,6 +27,17 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if redirected due to expired session
+  useEffect(() => {
+    if (sessionStorage.getItem("session_expired") === "true") {
+      sessionStorage.removeItem("session_expired");
+      toast.warning("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!", {
+        autoClose: 5000,
+        closeOnClick: true,
+      });
+    }
+  }, []);
 
   const {
     register,

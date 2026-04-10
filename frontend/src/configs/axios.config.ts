@@ -1,5 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 import type { ApiResponse, ErrorApiResponse } from "../types/api.type";
+
 const instance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:8081/api",
   headers: {
@@ -11,12 +12,12 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   function (config) {
-    // if (config.data instanceof FormData) {
-    //   config.headers["Content-Type"] = "multipart/form-data";
-    // } else {
-    //   config.headers["Content-Type"] = "application/json";
-    // }
-    // Do something before request is sent
+    // Set Content-Type based on data type, overriding default
+    if (config.data instanceof FormData) {
+      config.headers["Content-Type"] = "multipart/form-data";
+    } else if (typeof config.data === "object" && config.data !== null) {
+      config.headers["Content-Type"] = "application/json";
+    }
 
     const token = sessionStorage.getItem("access_token");
     config.headers.Authorization = token ? `Bearer ${token}` : "";
@@ -41,6 +42,16 @@ instance.interceptors.response.use(
     return response.data;
   },
   function (error): Promise<unknown> {
+    const status = error.response?.status;
+    
+    // On 401 (token expired/invalid), clear all auth state and redirect to login
+    if (status === 401 && !window.location.pathname.includes("/auth/login")) {
+      sessionStorage.removeItem("access_token");
+      localStorage.removeItem("auth-storage");
+      sessionStorage.setItem("session_expired", "true");
+      window.location.href = "/auth/login";
+    }
+
     const customError: ErrorApiResponse = {
       ...error.response?.data,
       message: error.response?.data?.message || error.message,

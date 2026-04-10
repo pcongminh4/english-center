@@ -27,10 +27,19 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
   const [canceling, setCanceling] = useState<Record<number, boolean>>({});
   const [studentErrors, setStudentErrors] = useState<Record<number, string>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     loadSessions();
   }, [scheduleId]);
+
+  // Live timer to update QR expiry status every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(prev => prev + 1);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const getTodayString = () => {
     const now = new Date();
@@ -209,12 +218,12 @@ const TeacherCourseAttendance = ({ scheduleId, courseName }: TeacherCourseAttend
     const created = new Date(qrCreatedAt).getTime();
     const now = Date.now();
     const elapsed = now - created;
-    const expiryTime = 5 * 60 * 1000; // 5 minutes
+    const expiryTime = 30 * 60 * 1000; // 30 minutes (must match backend isQRExpired)
     const remaining = expiryTime - elapsed;
 
     if (remaining <= 0) {
       return { status: "expired", text: "Đã hết hạn" };
-    } else if (remaining < 2 * 60 * 1000) {
+    } else if (remaining < 10 * 60 * 1000) {
       return { status: "warning", text: `${Math.ceil(remaining / 60000)} phút còn lại` };
     } else {
       return { status: "active", text: `${Math.ceil(remaining / 60000)} phút còn lại` };
