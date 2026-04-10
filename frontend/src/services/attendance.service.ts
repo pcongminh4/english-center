@@ -1,5 +1,4 @@
 import axiosInstance from '../configs/axios.config';
-import type { ApiResponse } from '../types/api.type';
 
 export interface SessionAttendance {
   id: number;
