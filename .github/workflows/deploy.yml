@@ -3,7 +3,7 @@ name: Deploy English Center
 on:
   push:
     branches:
-      - dev  # Kích hoạt khi có code mới push lên nhánh dev
+      - dev
 
 jobs:
   deploy:
@@ -22,9 +22,6 @@ jobs:
           script: |
             cd /home/english_center
             git pull origin dev
-            # Build lại backend vì Dockerfile của bạn copy code vào bên trong
             docker-compose build backend
-            # Restart các service
             docker-compose up -d
-            # Dọn dẹp ảnh cũ để tránh đầy bộ nhớ VPS
             docker image prune -f
