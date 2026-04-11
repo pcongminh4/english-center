@@ -1,0 +1,30 @@
+name: Deploy English Center
+
+on:
+  push:
+    branches:
+      - dev  # Kích hoạt khi có code mới push lên nhánh dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /home/english_center
+            git pull origin dev
+            # Build lại backend vì Dockerfile của bạn copy code vào bên trong
+            docker-compose build backend
+            # Restart các service
+            docker-compose up -d
+            # Dọn dẹp ảnh cũ để tránh đầy bộ nhớ VPS
+            docker image prune -f
