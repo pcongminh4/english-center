@@ -23,7 +23,13 @@ jobs:
           script: |
             cd /home/english_center
             git pull origin dev
-            cd frontend && npm install && npm run build && cd ..
+            
+            cd frontend
+            npm install
+            npm run build
+            cd ..
+
             docker-compose up -d --build backend
-            docker-compose restart frontend
+            docker exec express_api npx prisma migrate deploy
+            
             docker image prune -f
