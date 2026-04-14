@@ -1,6 +1,7 @@
 import prisma from "../config/database";
 import { AdmissionStatus } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
+import crypto from "crypto";
 import {
   buildEntranceExamLRImageUrl,
   buildSpeakingImageUrl,
@@ -13,6 +14,18 @@ import {
   calculateWritingScaledScore,
 } from "./aiGrading.service";
 import { sendEmail } from "../utils/email.service";
+
+/**
+ * Escape special characters for safe HTML embedding
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 /**
  * Grade both Speaking and Writing sections together
@@ -198,6 +211,13 @@ export const gradeSpeakingAndWritingService = async (admission: any) => {
     return {
       questionIndex: q.questionIndex,
       score: result.totalScore,
+      scores: {
+        pronunciation: result.pronunciation.score,
+        grammar: result.grammar.score,
+        vocabulary: result.vocabulary.score,
+        fluency: result.fluency.score,
+        taskAchievement: result.taskAchievement.score,
+      },
       feedback: {
         pronunciation: result.pronunciation.feedback,
         grammar: result.grammar.feedback,
@@ -374,6 +394,13 @@ export const gradeSpeakingAndWritingService = async (admission: any) => {
     return {
       questionIndex: q.questionIndex,
       score: result.totalScore,
+      scores: {
+        grammar: result.grammar.score,
+        vocabulary: result.vocabulary.score,
+        organization: result.organization.score,
+        taskFulfillment: result.taskFulfillment.score,
+        toneAndStyle: result.toneAndStyle.score,
+      },
       feedback: {
         grammar: result.grammar.feedback,
         vocabulary: result.vocabulary.feedback,
@@ -428,15 +455,29 @@ export const gradeSpeakingAndWritingService = async (admission: any) => {
   });
 
   if (candidate?.email) {
-    await sendResultEmail(
-      candidate.email,
-      candidate.fullname,
-      speakingScaledScore,
-      writingScaledScore,
-      totalScaledScore,
-      speakingGradingResults,
-      writingGradingResults,
-    );
+    // Create registration token for course enrollment link (fire-and-forget, same as LR)
+    const tokenValue = crypto.randomUUID();
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    prisma.registrationToken.create({
+      data: {
+        token: tokenValue,
+        admissionId: admission.id,
+        expiresAt: tokenExpiresAt,
+      },
+    }).then(() => {
+      sendResultEmail(
+        candidate.email,
+        candidate.fullname,
+        speakingScaledScore,
+        writingScaledScore,
+        totalScaledScore,
+        speakingGradingResults,
+        writingGradingResults,
+        tokenValue,
+        tokenExpiresAt,
+      ).catch((err) => console.error("Failed to send SW result email:", err));
+    }).catch((err) => console.error("Failed to create registration token:", err));
   }
 
   return {
@@ -465,144 +506,228 @@ const sendResultEmail = async (
   totalScore: number,
   speakingResults: any[],
   writingResults: any[],
+  registrationToken: string,
+  tokenExpiresAt: Date,
 ) => {
   const speakingLevel = getScoreLevel(speakingScore, 200);
   const writingLevel = getScoreLevel(writingScore, 200);
   const totalLevel = getScoreLevel(totalScore, 400);
-
   const suggestedCourses = getSuggestedCourses(totalScore);
 
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const courseUrl = `${clientUrl}/dang-ky-khoa-hoc?token=${registrationToken}`;
+
+  const expiryLabel = tokenExpiresAt
+    ? tokenExpiresAt.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .header h1 { margin: 0; font-size: 28px; }
-        .content { background: #f9f9f9; padding: 30px; }
-        .score-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .score-display { font-size: 36px; font-weight: bold; color: #667eea; text-align: center; margin: 10px 0; }
-        .score-label { text-align: center; color: #666; font-size: 14px; }
-        .level-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; color: white; font-size: 12px; font-weight: bold; }
-        .level-beginner { background: #95a5a6; }
-        .level-intermediate { background: #3498db; }
-        .level-advanced { background: #2ecc71; }
-        .question-feedback { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #667eea; }
-        .question-number { font-weight: bold; color: #667eea; margin-bottom: 5px; }
-        .feedback-item { margin: 5px 0; font-size: 13px; }
-        .feedback-label { font-weight: bold; color: #555; }
-        .courses { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 20px; }
-        .course-item { padding: 10px; margin-bottom: 10px; background: #f0f0f0; border-radius: 5px; }
-        .footer { background: #666; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Kết quả thi Speaking & Writing</h1>
-          <p>Xin chào ${name},</p>
-        </div>
-        
-        <div class="content">
-          <h2>Điểm tổng quát</h2>
-          <div class="score-card">
-            <div class="score-display">${totalScore}/400</div>
-            <div class="score-label">Tổng điểm</div>
-            <div style="text-align: center; margin-top: 10px;">
-              <span class="level-badge level-${totalLevel.toLowerCase()}">${totalLevel}</span>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 20px;">
-            <div style="flex: 1;">
-              <div class="score-card">
-                <div class="score-display">${speakingScore}/200</div>
-                <div class="score-label">Speaking</div>
-                <div style="text-align: center; margin-top: 10px;">
-                  <span class="level-badge level-${speakingLevel.toLowerCase()}">${speakingLevel}</span>
-                </div>
-              </div>
-            </div>
-            <div style="flex: 1;">
-              <div class="score-card">
-                <div class="score-display">${writingScore}/200</div>
-                <div class="score-label">Writing</div>
-                <div style="text-align: center; margin-top: 10px;">
-                  <span class="level-badge level-${writingLevel.toLowerCase()}">${writingLevel}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <h2>Chi tiết Speaking (${speakingResults.length} câu)</h2>
-          ${speakingResults
-            .map(
-              (r) => `
-            <div class="question-feedback">
-              <div class="question-number">Câu ${r.questionIndex} (${r.partType})</div>
-              <div class="feedback-item"><span class="feedback-label">Điểm:</span> ${r.score}/25</div>
-              <div class="feedback-item"><span class="feedback-label">Phát âm:</span> ${r.feedback.pronunciation}</div>
-              <div class="feedback-item"><span class="feedback-label">Ngữ pháp:</span> ${r.feedback.grammar}</div>
-              <div class="feedback-item"><span class="feedback-label">Từ vựng:</span> ${r.feedback.vocabulary}</div>
-              <div class="feedback-item"><span class="feedback-label">Tự nhiên:</span> ${r.feedback.fluency}</div>
-              <div class="feedback-item"><span class="feedback-label">Hoàn thành nhiệm vụ:</span> ${r.feedback.taskAchievement}</div>
-            </div>
-          `,
-            )
-            .join("")}
-
-          <h2>Chi tiết Writing (${writingResults.length} câu)</h2>
-          ${writingResults
-            .map(
-              (r) => `
-            <div class="question-feedback">
-              <div class="question-number">Câu ${r.questionIndex} (${r.partType})</div>
-              <div class="feedback-item"><span class="feedback-label">Điểm:</span> ${r.score}/25</div>
-              <div class="feedback-item"><span class="feedback-label">Ngữ pháp:</span> ${r.feedback.grammar}</div>
-              <div class="feedback-item"><span class="feedback-label">Từ vựng:</span> ${r.feedback.vocabulary}</div>
-              <div class="feedback-item"><span class="feedback-label">Cấu trúc:</span> ${r.feedback.organization}</div>
-              <div class="feedback-item"><span class="feedback-label">Hoàn thành yêu cầu:</span> ${r.feedback.taskFulfillment}</div>
-              <div class="feedback-item"><span class="feedback-label">Văn phong:</span> ${r.feedback.toneAndStyle}</div>
-            </div>
-          `,
-            )
-            .join("")}
-
-          <h2>Gợi ý khóa học</h2>
-          <div class="courses">
-            ${suggestedCourses
-              .map(
-                (course) => `
-              <div class="course-item">
-                <strong>${course.name}</strong>
-                <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">${course.description}</p>
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-
-          <p style="margin-top: 20px; text-align: center; color: #666;">
-            Chúng tôi sẽ liên hệ với bạn sớm để tư vấn chi tiết.
-          </p>
-        </div>
-        
-        <div class="footer">
-          <p>English Center Management System</p>
-          <p style="font-size: 12px; margin-top: 5px;">Email này được gửi tự động, vui lòng không trả lời.</p>
-        </div>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #1e40af, #059669); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Kết quả bài thi đầu vào</h1>
+        <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">TOEIC Speaking & Writing</p>
       </div>
-    </body>
-    </html>
+
+      <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="color: #334155; font-size: 16px;">Xin chào <strong>${escapeHtml(name)}</strong>,</p>
+        <p style="color: #64748b;">Cảm ơn bạn đã tham gia bài thi đầu vào. Dưới đây là kết quả của bạn:</p>
+
+        ${expiryLabel ? `
+        <div style="background: #fff7ed; border: 2px solid #fb923c; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 6px;">
+            <tr>
+              <td style="font-size: 20px; padding-right: 8px; vertical-align: middle;">&#9200;</td>
+              <td style="color: #c2410c; font-weight: bold; font-size: 15px; vertical-align: middle;">Lưu ý quan trọng</td>
+            </tr>
+          </table>
+          <p style="margin: 0; color: #9a3412; font-size: 14px; line-height: 1.6;">
+            Link đăng ký khóa học bên dưới <strong>chỉ có hiệu lực trong 24 giờ</strong>.<br/>
+            Vui lòng hoàn tất đăng ký trước <strong>${expiryLabel}</strong>.<br/>
+            Sau thời gian này, link sẽ hết hạn và bạn cần liên hệ trung tâm để được hỗ trợ.
+          </p>
+        </div>` : ''}
+
+        <!-- Score Overview -->
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px 0 0 0;">
+              <div style="color: #1e40af; font-weight: bold; font-size: 14px;">Speaking</div>
+              <div style="color: #1e3a8a; font-size: 28px; font-weight: bold;">${speakingScore}</div>
+              <div style="color: #64748b; font-size: 12px;">${speakingResults.reduce((s, r) => s + r.score, 0)}/${speakingResults.length * 25} điểm gốc</div>
+              <div style="margin-top: 6px;">
+                <span style="display: inline-block; padding: 3px 10px; border-radius: 12px; color: white; font-size: 11px; font-weight: bold; background: ${getLevelColor(speakingLevel)};">${speakingLevel}</span>
+              </div>
+            </td>
+            <td style="padding: 12px 16px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 0 8px 0 0;">
+              <div style="color: #059669; font-weight: bold; font-size: 14px;">Writing</div>
+              <div style="color: #064e3b; font-size: 28px; font-weight: bold;">${writingScore}</div>
+              <div style="color: #64748b; font-size: 12px;">${writingResults.reduce((s, r) => s + r.score, 0)}/${writingResults.length * 25} điểm gốc</div>
+              <div style="margin-top: 6px;">
+                <span style="display: inline-block; padding: 3px 10px; border-radius: 12px; color: white; font-size: 11px; font-weight: bold; background: ${getLevelColor(writingLevel)};">${writingLevel}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Total Score -->
+        <div style="background: linear-gradient(135deg, #1e40af, #059669); padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+          <div style="color: rgba(255,255,255,0.8); font-size: 12px; font-weight: bold;">TỔNG ĐIỂM</div>
+          <div style="color: white; font-size: 36px; font-weight: bold;">${totalScore}</div>
+          <div style="color: rgba(255,255,255,0.7); font-size: 14px;">/ 400</div>
+          <div style="margin-top: 6px;">
+            <span style="display: inline-block; padding: 3px 10px; border-radius: 12px; color: white; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.2);">${totalLevel}</span>
+          </div>
+        </div>
+
+        <!-- Speaking Detail -->
+        <h3 style="color: #1e40af; font-size: 16px; margin: 24px 0 12px;">Chi tiết Speaking (${speakingResults.length} câu)</h3>
+        ${speakingResults
+          .map(
+            (r) => `
+          <div style="background: white; padding: 16px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #1e40af; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <!-- Question header + total score -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+              <tr>
+                <td style="font-weight: bold; color: #1e40af; font-size: 14px; vertical-align: middle;">Câu ${r.questionIndex} (${r.partType})</td>
+                <td style="text-align: right; vertical-align: middle;">
+                  <span style="background: ${getScoreColor(r.score)}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 14px;">${r.score}/25</span>
+                </td>
+              </tr>
+            </table>
+            <!-- Criteria scores table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+              ${renderCriteriaRow("Phát âm", r.scores.pronunciation, getScoreColor(r.scores.pronunciation * 5))}
+              ${renderCriteriaRow("Ngữ pháp", r.scores.grammar, getScoreColor(r.scores.grammar * 5))}
+              ${renderCriteriaRow("Từ vựng", r.scores.vocabulary, getScoreColor(r.scores.vocabulary * 5))}
+              ${renderCriteriaRow("Tự nhiên", r.scores.fluency, getScoreColor(r.scores.fluency * 5))}
+              ${renderCriteriaRow("Hoàn thành nhiệm vụ", r.scores.taskAchievement, getScoreColor(r.scores.taskAchievement * 5))}
+            </table>
+            <!-- Feedback -->
+            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 6px;">
+              ${renderFeedbackItem("Phát âm", escapeHtml(r.feedback.pronunciation))}
+              ${renderFeedbackItem("Ngữ pháp", escapeHtml(r.feedback.grammar))}
+              ${renderFeedbackItem("Từ vựng", escapeHtml(r.feedback.vocabulary))}
+              ${renderFeedbackItem("Tự nhiên", escapeHtml(r.feedback.fluency))}
+              ${renderFeedbackItem("Hoàn thành nhiệm vụ", escapeHtml(r.feedback.taskAchievement))}
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+
+        <!-- Writing Detail -->
+        <h3 style="color: #059669; font-size: 16px; margin: 24px 0 12px;">Chi tiết Writing (${writingResults.length} câu)</h3>
+        ${writingResults
+          .map(
+            (r) => `
+          <div style="background: white; padding: 16px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <!-- Question header + total score -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+              <tr>
+                <td style="font-weight: bold; color: #059669; font-size: 14px; vertical-align: middle;">Câu ${r.questionIndex} (${r.partType})</td>
+                <td style="text-align: right; vertical-align: middle;">
+                  <span style="background: ${getScoreColor(r.score)}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 14px;">${r.score}/25</span>
+                </td>
+              </tr>
+            </table>
+            <!-- Criteria scores table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+              ${renderCriteriaRow("Ngữ pháp", r.scores.grammar, getScoreColor(r.scores.grammar * 5))}
+              ${renderCriteriaRow("Từ vựng", r.scores.vocabulary, getScoreColor(r.scores.vocabulary * 5))}
+              ${renderCriteriaRow("Cấu trúc", r.scores.organization, getScoreColor(r.scores.organization * 5))}
+              ${renderCriteriaRow("Hoàn thành yêu cầu", r.scores.taskFulfillment, getScoreColor(r.scores.taskFulfillment * 5))}
+              ${renderCriteriaRow("Văn phong", r.scores.toneAndStyle, getScoreColor(r.scores.toneAndStyle * 5))}
+            </table>
+            <!-- Feedback -->
+            <div style="background: #f8fafc; padding: 10px 12px; border-radius: 6px;">
+              ${renderFeedbackItem("Ngữ pháp", escapeHtml(r.feedback.grammar))}
+              ${renderFeedbackItem("Từ vựng", escapeHtml(r.feedback.vocabulary))}
+              ${renderFeedbackItem("Cấu trúc", escapeHtml(r.feedback.organization))}
+              ${renderFeedbackItem("Hoàn thành yêu cầu", escapeHtml(r.feedback.taskFulfillment))}
+              ${renderFeedbackItem("Văn phong", escapeHtml(r.feedback.toneAndStyle))}
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+
+        <!-- Suggested Courses -->
+        <h3 style="color: #334155; font-size: 16px; margin: 24px 0 12px;">Gợi ý khóa học</h3>
+        ${suggestedCourses
+          .map(
+            (course) => `
+          <div style="background: white; padding: 12px 16px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <strong style="color: #1e40af;">${course.name}</strong>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">${course.description}</p>
+          </div>
+        `,
+          )
+          .join("")}
+
+        <!-- Register CTA -->
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${courseUrl}"
+             style="display: inline-block; padding: 14px 32px; background: #1e40af; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+            Đăng ký khóa học ngay
+          </a>
+          ${expiryLabel ? `<p style="color: #fb923c; font-size: 13px; margin-top: 10px;">&#9888; Link hết hạn lúc ${expiryLabel}</p>` : ''}
+        </div>
+
+        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 30px;">
+          Email này được gửi tự động từ hệ thống English Center. Vui lòng không trả lời email này.
+        </p>
+      </div>
+    </div>
   `;
 
   await sendEmail({
     to: email,
-    subject: "Kết quả thi Speaking & Writing - English Center",
+    subject: `Kết quả bài thi đầu vào TOEIC Speaking & Writing - ${name}`,
     html,
   });
+};
+
+const getLevelColor = (level: string): string => {
+  switch (level) {
+    case "Cao cấp":
+      return "#16a34a";
+    case "Trung cấp":
+      return "#2563eb";
+    case "Sơ cấp":
+      return "#d97706";
+    default:
+      return "#ef4444";
+  }
+};
+
+const getScoreColor = (score: number): string => {
+  if (score >= 21) return "#16a34a";
+  if (score >= 16) return "#2563eb";
+  if (score >= 11) return "#d97706";
+  return "#ef4444";
+};
+
+const renderCriteriaRow = (label: string, score: number, color: string): string => {
+  return `
+    <tr>
+      <td style="padding: 6px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${label}</td>
+      <td style="padding: 6px 0; text-align: right; font-weight: bold; font-size: 13px; color: ${color}; border-bottom: 1px solid #f1f5f9;">${score}/5</td>
+    </tr>`;
+};
+
+const renderFeedbackItem = (label: string, text: string): string => {
+  return `
+    <div style="margin-bottom: 6px;">
+      <span style="color: #475569; font-size: 12px; font-weight: bold; display: block; margin-bottom: 2px;">${label}</span>
+      <span style="color: #64748b; font-size: 13px; line-height: 1.5;">${text}</span>
+    </div>`;
 };
 
 const getScoreLevel = (score: number, maxScore: number): string => {

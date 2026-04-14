@@ -179,7 +179,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
               <img
                 src={preview}
                 alt={`Preview ${index + 1}`}
-                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                className="w-full min-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
               />
               {!disabled && (
                 <button

@@ -97,7 +97,7 @@ export const WritingQuestion: React.FC<WritingQuestionProps> = ({
                 <img
                   src={img}
                   alt={`Hình ${idx + 1}`}
-                  className="w-full h-64 object-cover rounded-lg border-2 border-gray-200"
+                  className="w-full min-h-64 max-h-[600px] object-contain rounded-lg border-2 border-gray-200 bg-gray-50"
                 />
               </div>
             ))}
