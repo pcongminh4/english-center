@@ -9,7 +9,7 @@ fi
 
 echo "Deploying to $TARGET..."
 
-docker-compose up -d --build $TARGET
+docker compose up -d --build $TARGET
 
 echo "Waiting for $TARGET to be ready..."
 sleep 20 
