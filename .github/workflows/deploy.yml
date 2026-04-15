@@ -24,7 +24,8 @@ jobs:
             cd /home/english_center
             git pull origin dev
 
-            docker compose up -d --build
-            docker exec express_api npx prisma migrate deploy
+            chmod +x deploy.sh
+            
+            ./deploy.sh
             
             docker image prune -f
