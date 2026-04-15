@@ -17,7 +17,7 @@ sleep 20
 echo "Running database migrations..."
 docker compose exec -T $TARGET npx prisma migrate deploy || echo "Migration skipped or failed, but continuing..."
 
-docker exec frontend nginx -s reload
+docker exec nginx_proxy nginx -s reload
 
 echo "Stopping $OLD..."
 docker compose stop $OLD
