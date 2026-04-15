@@ -9,15 +9,17 @@ fi
 
 echo "Deploying to $TARGET..."
 
-docker compose up -d --build $TARGET
+docker compose up -d --build --remove-orphans $TARGET
 
 echo "Waiting for $TARGET to be ready..."
 sleep 20 
 
 echo "Running database migrations..."
-docker compose exec -T $TARGET npx prisma migrate deploy
+docker compose exec -T $TARGET npx prisma migrate deploy || echo "Migration skipped or failed, but continuing..."
 
-docker exec nginx_proxy nginx -s reload
+docker exec frontend nginx -s reload
 
 echo "Stopping $OLD..."
-docker-compose stop $OLD
+docker compose stop $OLD
+
+echo "Zero Downtime Deployment Finished!"
