@@ -183,6 +183,7 @@ export const getActiveCoursesWithFutureSchedulesService = async (): Promise<
       orderBy: {
         createdAt: "desc",
       },
+      take: 6,
     });
 
     return courses.map(toCourseResponse);

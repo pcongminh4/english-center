@@ -8,44 +8,58 @@ interface Props {
 
 const ToeicLanding: React.FC<Props> = ({ onStartTest, onViewCourses }) => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="bg-gray-50 flex flex-col justify-start items-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl w-full space-y-16">
         
         {/* --- HERO SECTION --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           {/* Left Content */}
-          <div className="flex flex-col items-start">
-            {/* Badge */}
-            <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wide">
-              Công nghệ giáo dục thế hệ mới
-            </span>
+<div className="flex flex-col items-start lg:pr-8">
 
-            {/* Headline */}
-            <h1 className="font-sans text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-              Nâng cao điểm TOEIC <br />
-              <span className="text-blue-500">cùng trí tuệ nhân tạo</span>
-            </h1>
 
-            {/* Description */}
-            <p className="text-gray-500 text-lg mb-8 max-w-lg leading-relaxed">
-              Lộ trình học TOEIC bài bản từ cơ bản đến 900+ với thuật toán AI độc quyền, cá nhân hóa bài luyện và phản hồi chi tiết.
-            </p>
+  {/* Headline - Sử dụng tracking-tight và font-black để tạo sự mạnh mẽ */}
+  <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-[1.1] mb-6 tracking-tight">
+    Chinh phục TOEIC <br />
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
+      Thông minh hơn.
+    </span>
+  </h1>
 
-            {/* Buttons */}
-            <div className="font-sans flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg transition-colors shadow-md text-center"
-                onClick={onStartTest}
-              >
-                Làm bài kiểm tra TOEIC miễn phí
-              </button>
-              <button className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-3.5 px-6 rounded-lg border border-gray-200 transition-colors shadow-sm text-center"
-                onClick={onViewCourses}
-              >
-                Xem khóa học
-              </button>
-            </div>
-          </div>
+  {/* Description - Tăng line-height và đổi màu xám nhẹ hơn */}
+  <p className="text-gray-500 text-lg md:text-xl mb-10 max-w-lg leading-relaxed font-medium">
+    Lộ trình cá nhân hóa từ số 0 đến 900+ với thuật toán AI độc quyền, giúp bạn tiết kiệm 40% thời gian ôn luyện.
+  </p>
+
+  {/* Buttons - Thay đổi bo góc và thêm shadow mềm */}
+  <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+    <button 
+      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-lg shadow-blue-200 active:scale-95 flex items-center justify-center gap-2"
+      onClick={onStartTest}
+    >
+      Thi thử miễn phí
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+    </button>
+    <button 
+      className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 px-8 rounded-2xl border-2 border-gray-100 transition-all active:scale-95 text-center"
+      onClick={onViewCourses}
+    >
+      Xem khóa học
+    </button>
+  </div>
+
+  {/* Thêm Social Proof nhỏ dưới nút để tăng uy tín */}
+  <div className="mt-10 flex items-center gap-3">
+    <div className="flex -space-x-2">
+      {[1, 2, 3].map((i) => (
+        <img key={i} className="w-8 h-8 rounded-full border-2 border-white shadow-sm" src={`https://i.pravatar.cc/100?img=${i+20}`} alt="avatar" />
+      ))}
+    </div>
+    <p className="text-sm text-gray-400 font-medium">
+      <span className="text-gray-900 font-bold">10k+</span> học viên đã đạt mục tiêu
+    </p>
+  </div>
+</div>
 
           {/* Right Image Section */}
           <div className="relative">

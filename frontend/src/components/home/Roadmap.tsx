@@ -38,8 +38,8 @@ const Roadmap: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center overflow-hidden">
-      <div className="max-w-6xl w-full text-center">
+    <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center overflow-hidden">
+      <div className="max-w-7xl w-full text-center">
         
       <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight text-gray-900 mb-16 md:mb-24">
       Lộ trình thành công với 4 bước
