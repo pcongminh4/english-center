@@ -91,55 +91,43 @@ export const createScheduleService = async (
 
   const days = [...new Set(data.sessions.map((s) => s.day))];
 
-  // Check conflict (teacher + classroom)
-  const conflictSessions = await prisma.scheduleSession.findMany({
-    where: {
-      day: { in: days },
-      schedule: {
-        AND: [
-          {
-            startTime: { lte: end },
-            endTime: { gte: start },
-          },
-          {
-            OR: [{ teacherId }, { classroomId }],
-          },
-        ],
-      },
-    },
-    include: {
-      schedule: {
-        select: {
-          teacherId: true,
-          classroomId: true,
+  const conflictChecks = data.sessions.map(async (session) => {
+    const conflict = await prisma.scheduleSession.findFirst({
+      where: {
+        day: session.day,
+        // Kiểm tra overlap thời gian
+        startTime: { lt: session.endTime },
+        endTime: { gt: session.startTime },
+        schedule: {
+          AND: [
+            // Chỉ check trong khoảng thời gian hiệu lực của khóa học
+            {
+              startTime: { lte: end },
+              endTime: { gte: start },
+            },
+            // Check trùng giáo viên HOẶC phòng học
+            {
+              OR: [{ teacherId }, { classroomId }],
+            },
+          ],
         },
       },
-    },
+      include: {
+        schedule: true,
+      },
+    });
+    return { session, conflict };
   });
 
-  for (const session of data.sessions) {
-    for (const conflict of conflictSessions) {
-      if (conflict.day !== session.day) continue;
+  const results = await Promise.all(conflictChecks);
 
-      const isOverlap =
-        toMinutes(conflict.startTime) < toMinutes(session.endTime) &&
-        toMinutes(conflict.endTime) > toMinutes(session.startTime);
-
-      if (!isOverlap) continue;
-
-      if (conflict.schedule.teacherId === teacherId) {
-        throw new AppError(
-          `Giáo viên bị trùng lịch vào ${session.day} (${session.startTime} - ${session.endTime})`,
-          400,
-        );
-      }
-
-      if (conflict.schedule.classroomId === classroomId) {
-        throw new AppError(
-          `Phòng học bị trùng lịch vào ${session.day} (${session.startTime} - ${session.endTime})`,
-          400,
-        );
-      }
+  for (const { session, conflict } of results) {
+    if (conflict) {
+      const target = conflict.schedule.teacherId === teacherId ? "Giáo viên" : "Phòng học";
+      throw new AppError(
+        `${target} đã bị trùng lịch vào ${session.day} (${session.startTime} - ${session.endTime})`,
+        400
+      );
     }
   }
 

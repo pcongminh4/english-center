@@ -2,10 +2,10 @@ import React from 'react';
 
 const CallToAction: React.FC = () => {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center">
+    <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center">
       
       {/* Container chính: Màu xanh dương + Bo góc lớn */}
-      <div className="relative max-w-5xl w-full bg-blue-600 rounded-[2.5rem] p-12 md:p-20 text-center overflow-hidden shadow-2xl">
+      <div className="relative max-w-7xl w-full bg-blue-600 rounded-[2.5rem] p-12 md:p-20 text-center overflow-hidden shadow-2xl">
         
         {/* --- BACKGROUND PATTERN (Họa tiết chấm bi) --- */}
         <div 
