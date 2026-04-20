@@ -74,7 +74,8 @@ const ScheduleCard: React.FC<{ course: Course }> = ({ course }) => {
 
           <button
             onClick={() => navigate(`/course/${course.id}`)}
-            className="bg-blue-50 text-blue-600 p-3 rounded-xl 
+            className="bg-blue-50 text-blue-600 p-3 rounded-xl
+                      font-bold text-sm tracking-tight
                       group-hover:bg-blue-600 group-hover:text-white 
                       transition-all duration-300"
           >

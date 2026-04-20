@@ -3,7 +3,7 @@ import { Mic, CheckCircle2 } from 'lucide-react';
 
 const AiFeedback: React.FC = () => {
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center">
+    <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center">
       {/* Container chính */}
       <div className="max-w-7xl w-full bg-[#0f172a] rounded-3xl p-8 md:p-16 overflow-hidden shadow-2xl flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
         
