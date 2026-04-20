@@ -1,4 +1,4 @@
-name: Deploy English Center
+name: Build and Deploy English Center
 
 on:
   push:
@@ -7,13 +7,43 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  # JOB 1: Build Image trên GitHub và đẩy lên Docker Hub
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to VPS
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build & Push Backend
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./Backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/english-center-backend:latest
+
+      # Build & Push Frontend (Nginx)
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/english-center-frontend:latest
+          build-args: |
+            VITE_BACKEND_URL=https://trannam.xyz/api
+
+  # JOB 2: Điều khiển VPS kéo Image về và chạy
+  deploy:
+    needs: build-and-push # Đợi Job 1 xong mới chạy Job 2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -22,10 +52,19 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /home/english_center
-            git pull origin dev
-
-            chmod +x deploy.sh
             
+            # 1. Pull code mới chỉ để lấy file docker-compose.yml và deploy.sh mới (nếu có sửa)
+            git pull origin dev
+            
+            # 2. Login Docker trên VPS (để pull image private nếu cần)
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            
+            # 3. Pull các Image mới nhất từ Docker Hub về VPS
+            docker compose pull
+            
+            # 4. Chạy script swap Blue-Green
+            chmod +x deploy.sh
             ./deploy.sh
             
+            # 5. Dọn dẹp các image cũ để tránh đầy ổ cứng
             docker image prune -f
